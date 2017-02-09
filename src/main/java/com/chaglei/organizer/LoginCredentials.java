@@ -51,6 +51,7 @@ public class LoginCredentials extends JFrame {
 		
 		txtPassword = new JPasswordField();
 		txtPassword.setColumns(10);
+		txtPassword.setText("PA$$Word12345");
 		
 		JButton btnLogin = new JButton("Login");
 		btnLogin.addActionListener(new ActionListener() {
