@@ -12,181 +12,408 @@ import javax.swing.JButton;
 import javax.swing.JTextField;
 import javax.swing.JCheckBox;
 import javax.swing.border.LineBorder;
+
+import util.FrameUtil;
+
 import java.awt.Color;
+import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.ActionEvent;
 
 public class ManageUsers extends JFrame {
-	private JTextField textField;
-	private JTextField textField_1;
-	private JTextField textField_2;
-	private JTextField textField_3;
-	private JTextField textField_4;
-	public ManageUsers() {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private JTextField txtCurrentlyLoggedInAs;
+	private JTextField txtHostname;
+	private JTextField txtPort;
+	private JTextField txtDataSchema;
+	private JTextField txtAdminSchema;
+	private JTextField txtUserName;
+	private JTextField txtPassword;
+	private JTextField txtDataSchemaNewUser;
+	private JTextField txtAdminSchemaNewUser;
+	public ManageUsers(LoginCredentials loginCredentials) {
 		
-		JPanel panel = new JPanel();
-		panel.setBorder(new LineBorder(new Color(0, 0, 0)));
+		JPanel panelNewUser = new JPanel();
+		panelNewUser.setBorder(new LineBorder(new Color(0, 0, 0)));
 		
-		JPanel panel_1 = new JPanel();
-		panel_1.setBorder(new LineBorder(new Color(0, 0, 0)));
+		JPanel panelExistingUsers = new JPanel();
+		panelExistingUsers.setBorder(new LineBorder(new Color(0, 0, 0)));
 		
-		JPanel panel_2 = new JPanel();
-		panel_2.setBorder(new LineBorder(new Color(0, 0, 0)));
+		JPanel panelExistingConnectionInformation = new JPanel();
+		panelExistingConnectionInformation.setBorder(new LineBorder(new Color(0, 0, 0)));
 		GroupLayout groupLayout = new GroupLayout(getContentPane());
 		groupLayout.setHorizontalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
-					.addComponent(panel, GroupLayout.PREFERRED_SIZE, 315, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panelNewUser, GroupLayout.PREFERRED_SIZE, 315, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_1, GroupLayout.DEFAULT_SIZE, 869, Short.MAX_VALUE))
-				.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 1190, Short.MAX_VALUE)
+					.addComponent(panelExistingUsers, GroupLayout.DEFAULT_SIZE, 869, Short.MAX_VALUE))
+				.addComponent(panelExistingConnectionInformation, GroupLayout.DEFAULT_SIZE, 1190, Short.MAX_VALUE)
 		);
 		groupLayout.setVerticalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
-					.addComponent(panel_2, GroupLayout.PREFERRED_SIZE, 146, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panelExistingConnectionInformation, GroupLayout.PREFERRED_SIZE, 146, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addComponent(panel_1, Alignment.TRAILING, 0, 0, Short.MAX_VALUE)
-						.addComponent(panel, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 644, Short.MAX_VALUE))
+						.addComponent(panelExistingUsers, Alignment.TRAILING, 0, 0, Short.MAX_VALUE)
+						.addComponent(panelNewUser, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 644, Short.MAX_VALUE))
 					.addGap(0))
 		);
 		
-		textField = new JTextField();
-		textField.setColumns(10);
+		txtCurrentlyLoggedInAs = new JTextField();
+		txtCurrentlyLoggedInAs.setEditable(false);
+		txtCurrentlyLoggedInAs.setText(loginCredentials.getUserName());
+		txtCurrentlyLoggedInAs.setColumns(10);
 		
-		JLabel lblNewLabel = new JLabel("Currently Logged In As:");
+		JLabel lblCurrentlyLoggedInAs = new JLabel("Currently Login:");
 		
 		JLabel lblHostname = new JLabel("Hostname:");
 		
-		textField_1 = new JTextField();
-		textField_1.setColumns(10);
+		txtHostname = new JTextField();
+		txtHostname.setEditable(false);
+		txtHostname.setText(loginCredentials.getHostName());
+		txtHostname.setColumns(10);
 		
 		JLabel lblPort = new JLabel("Port:");
 		
-		textField_2 = new JTextField();
-		textField_2.setColumns(10);
+		txtPort = new JTextField();
+		txtPort.setEditable(false);
+		txtPort.setColumns(10);
+		txtPort.setText(loginCredentials.getPort());
 		
 		JLabel label = new JLabel("Port:");
 		
-		textField_3 = new JTextField();
-		textField_3.setColumns(10);
+		JLabel lblDataSchema = new JLabel("Data Schema:");
 		
-		JLabel lblSchema = new JLabel("Schema:");
+		txtDataSchema = new JTextField();
+		txtDataSchema.setEditable(false);
+		txtDataSchema.setColumns(10);
+		txtDataSchema.setText(loginCredentials.getDBSchema());
 		
-		textField_4 = new JTextField();
-		textField_4.setColumns(10);
-		
-		JCheckBox chckbxNewCheckBox = new JCheckBox("Read");
+		JCheckBox chckbxRead = new JCheckBox("Read");
+		chckbxRead.setEnabled(false);
 		
 		JCheckBox chckbxWrite = new JCheckBox("Write");
+		chckbxWrite.setEnabled(false);
 		
-		JCheckBox chckbxSchemaAdmin = new JCheckBox("Schema Admin");
+		JCheckBox chckbxSchemaAdmin = new JCheckBox("Data Schema Admin");
+		chckbxSchemaAdmin.setEnabled(false);
 		
-		JCheckBox chckbxGlobalAdmin = new JCheckBox("Global Admin");
-		GroupLayout gl_panel_2 = new GroupLayout(panel_2);
-		gl_panel_2.setHorizontalGroup(
-			gl_panel_2.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_2.createSequentialGroup()
+		JCheckBox chckbxGlobalAdmin = new JCheckBox("Admin ALL Dbs");
+		chckbxGlobalAdmin.setEnabled(false);
+		
+		JLabel lblAdminSchema = new JLabel("Admin Schema:");
+		
+		txtAdminSchema = new JTextField();
+		txtAdminSchema.setEditable(false);
+		txtAdminSchema.setText("admin");
+		txtAdminSchema.setColumns(10);
+		GroupLayout gl_panelExistingConnectionInformation = new GroupLayout(panelExistingConnectionInformation);
+		gl_panelExistingConnectionInformation.setHorizontalGroup(
+			gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_panel_2.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panel_2.createSequentialGroup()
-							.addComponent(lblNewLabel)
-							.addGap(18)
-							.addComponent(textField, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
-							.addGap(18)
-							.addComponent(chckbxNewCheckBox))
-						.addGroup(gl_panel_2.createSequentialGroup()
-							.addComponent(lblHostname, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
-							.addGap(18)
-							.addComponent(textField_1, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
-							.addGap(18)
-							.addComponent(chckbxWrite, GroupLayout.PREFERRED_SIZE, 51, GroupLayout.PREFERRED_SIZE))
-						.addGroup(gl_panel_2.createSequentialGroup()
+					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING, false)
+						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 							.addComponent(lblPort, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
-							.addComponent(textField_2, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
+							.addComponent(txtPort, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
-							.addComponent(chckbxSchemaAdmin))
-						.addGroup(gl_panel_2.createSequentialGroup()
-							.addComponent(label, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
+							.addComponent(chckbxSchemaAdmin, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+						.addComponent(label, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
+						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
+							.addComponent(lblDataSchema, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
-							.addComponent(textField_3, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE))
-						.addGroup(gl_panel_2.createSequentialGroup()
-							.addComponent(lblSchema, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
+							.addComponent(txtDataSchema, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
-							.addComponent(textField_4, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
+							.addComponent(chckbxGlobalAdmin, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
+							.addComponent(lblAdminSchema, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
-							.addComponent(chckbxGlobalAdmin, GroupLayout.PREFERRED_SIZE, 95, GroupLayout.PREFERRED_SIZE)))
-					.addContainerGap(579, Short.MAX_VALUE))
+							.addComponent(txtAdminSchema, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
+							.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
+								.addComponent(lblHostname, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
+								.addComponent(lblCurrentlyLoggedInAs))
+							.addGap(18)
+							.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING, false)
+								.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
+									.addComponent(txtCurrentlyLoggedInAs, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
+									.addGap(18)
+									.addComponent(chckbxRead, GroupLayout.PREFERRED_SIZE, 190, GroupLayout.PREFERRED_SIZE))
+								.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
+									.addComponent(txtHostname, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
+									.addGap(18)
+									.addComponent(chckbxWrite, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
+					.addContainerGap(482, Short.MAX_VALUE))
 		);
-		gl_panel_2.setVerticalGroup(
-			gl_panel_2.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_2.createSequentialGroup()
+		gl_panelExistingConnectionInformation.setVerticalGroup(
+			gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_panel_2.createParallelGroup(Alignment.BASELINE)
-						.addComponent(lblNewLabel)
-						.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(chckbxNewCheckBox))
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_panel_2.createParallelGroup(Alignment.TRAILING)
-						.addGroup(gl_panel_2.createParallelGroup(Alignment.LEADING)
-							.addGroup(gl_panel_2.createSequentialGroup()
-								.addGap(3)
-								.addComponent(lblHostname))
-							.addComponent(textField_1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblCurrentlyLoggedInAs)
+						.addComponent(txtCurrentlyLoggedInAs, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(chckbxRead))
+					.addGap(1)
+					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.TRAILING)
+						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
+							.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
+									.addGap(3)
+									.addComponent(lblHostname))
+								.addComponent(txtHostname, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+							.addPreferredGap(ComponentPlacement.RELATED))
 						.addComponent(chckbxWrite))
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_panel_2.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panel_2.createSequentialGroup()
+					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 							.addGap(3)
 							.addComponent(lblPort))
-						.addGroup(gl_panel_2.createParallelGroup(Alignment.BASELINE)
-							.addComponent(textField_2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.BASELINE)
+							.addComponent(txtPort, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 							.addComponent(chckbxSchemaAdmin)))
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_panel_2.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panel_2.createSequentialGroup()
+					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 							.addGap(3)
-							.addComponent(lblSchema))
-						.addGroup(gl_panel_2.createParallelGroup(Alignment.BASELINE)
-							.addComponent(textField_4, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+							.addComponent(lblDataSchema))
+						.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.BASELINE)
+							.addComponent(txtDataSchema, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 							.addComponent(chckbxGlobalAdmin)))
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_panel_2.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panel_2.createSequentialGroup()
-							.addGap(56)
-							.addComponent(label))
-						.addGroup(gl_panel_2.createSequentialGroup()
-							.addGap(53)
-							.addComponent(textField_3, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
-					.addContainerGap(99, Short.MAX_VALUE))
+					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
+							.addGap(2)
+							.addComponent(lblAdminSchema))
+						.addComponent(txtAdminSchema, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(137)
+					.addComponent(label)
+					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
 		);
-		panel_2.setLayout(gl_panel_2);
+		panelExistingConnectionInformation.setLayout(gl_panelExistingConnectionInformation);
 		
 		JLabel lblNewUsers = new JLabel("New User");
-		GroupLayout gl_panel = new GroupLayout(panel);
-		gl_panel.setHorizontalGroup(
-			gl_panel.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel.createSequentialGroup()
-					.addGap(124)
-					.addComponent(lblNewUsers)
-					.addContainerGap(124, Short.MAX_VALUE))
-		);
-		gl_panel.setVerticalGroup(
-			gl_panel.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel.createSequentialGroup()
-					.addComponent(lblNewUsers)
-					.addContainerGap(688, Short.MAX_VALUE))
-		);
-		panel.setLayout(gl_panel);
 		
-		JList list = new JList();
+		JLabel lblUserName = new JLabel("User Name:");
+		
+		txtUserName = new JTextField();
+		txtUserName.setColumns(10);
+		
+		JLabel lblPassword = new JLabel("Password:");
+		
+		txtPassword = new JTextField();
+		//txtPassword.setText(new String(loginCredentials.getPassword()));
+		txtPassword.setColumns(10);
+		
+		JLabel lblDataSchemaNewUser = new JLabel("Data Schema:");
+		
+		txtDataSchemaNewUser = new JTextField();
+		txtDataSchemaNewUser.setColumns(10);
+		
+		JLabel lblAdminSchema_1 = new JLabel("Admin Schema:");
+		
+		txtAdminSchemaNewUser = new JTextField();
+		txtAdminSchemaNewUser.setEditable(false);
+		txtAdminSchemaNewUser.setColumns(10);
+		
+		JCheckBox checkBoxReadNewUser = new JCheckBox("Read");
+		
+		JCheckBox checkBoxWriteNewUser = new JCheckBox("Write");
+		
+		JCheckBox checkBoxDataSchemaAdminNewUser = new JCheckBox("Data Schema Admin");
+		
+		JCheckBox checkBoxAdminALLDbsNewUser = new JCheckBox("Admin ALL Dbs");
+		checkBoxAdminALLDbsNewUser.addItemListener(new ItemListener() {
+
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if(e.getStateChange() == ItemEvent.SELECTED)
+                {
+                	txtAdminSchemaNewUser.setText(txtAdminSchema.getText());
+                }
+                else
+                {
+                	txtAdminSchemaNewUser.setText("");
+                }
+                    
+            }
+        });
+		
+		JButton btnCreateUser = new JButton("Create User");
+		GroupLayout gl_panelNewUser = new GroupLayout(panelNewUser);
+		gl_panelNewUser.setHorizontalGroup(
+			gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panelNewUser.createSequentialGroup()
+					.addGap(6)
+					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.TRAILING)
+						.addComponent(btnCreateUser, GroupLayout.PREFERRED_SIZE, 266, GroupLayout.PREFERRED_SIZE)
+						.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING, false)
+							.addGroup(gl_panelNewUser.createSequentialGroup()
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(checkBoxReadNewUser, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+							.addGroup(gl_panelNewUser.createSequentialGroup()
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(lblAdminSchema_1, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(txtAdminSchemaNewUser))
+							.addGroup(gl_panelNewUser.createSequentialGroup()
+								.addGap(124)
+								.addComponent(lblNewUsers))
+							.addGroup(gl_panelNewUser.createSequentialGroup()
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(lblDataSchemaNewUser, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(txtDataSchemaNewUser))
+							.addGroup(gl_panelNewUser.createSequentialGroup()
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+									.addComponent(lblUserName)
+									.addComponent(lblPassword, GroupLayout.PREFERRED_SIZE, 56, GroupLayout.PREFERRED_SIZE))
+								.addGap(45)
+								.addGroup(gl_panelNewUser.createParallelGroup(Alignment.TRAILING)
+									.addComponent(txtUserName, GroupLayout.DEFAULT_SIZE, 176, Short.MAX_VALUE)
+									.addComponent(txtPassword)))
+							.addGroup(gl_panelNewUser.createSequentialGroup()
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+									.addComponent(checkBoxAdminALLDbsNewUser, GroupLayout.DEFAULT_SIZE, 281, Short.MAX_VALUE)
+									.addComponent(checkBoxDataSchemaAdminNewUser, GroupLayout.DEFAULT_SIZE, 281, Short.MAX_VALUE)))))
+					.addContainerGap())
+				.addGroup(gl_panelNewUser.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(checkBoxWriteNewUser, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+					.addGap(32))
+		);
+		gl_panelNewUser.setVerticalGroup(
+			gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panelNewUser.createSequentialGroup()
+					.addComponent(lblNewUsers)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblUserName)
+						.addComponent(txtUserName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(9)
+					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblPassword)
+						.addComponent(txtPassword, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblDataSchemaNewUser)
+						.addComponent(txtDataSchemaNewUser, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panelNewUser.createSequentialGroup()
+							.addGap(9)
+							.addComponent(lblAdminSchema_1))
+						.addGroup(gl_panelNewUser.createSequentialGroup()
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addComponent(txtAdminSchemaNewUser, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addComponent(checkBoxReadNewUser)
+					.addGap(3)
+					.addComponent(checkBoxWriteNewUser)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addComponent(checkBoxDataSchemaAdminNewUser)
+					.addGap(3)
+					.addComponent(checkBoxAdminALLDbsNewUser)
+					.addPreferredGap(ComponentPlacement.RELATED, 327, Short.MAX_VALUE)
+					.addComponent(btnCreateUser)
+					.addContainerGap())
+		);
+		panelNewUser.setLayout(gl_panelNewUser);
 		
 		JLabel lblUsers = new JLabel("USERS:");
 		
-		JList list_1 = new JList();
+		JLabel lblSchemas = new JLabel("SCHEMAS:");
 		
-		JList list_2 = new JList();
-		list_2.setModel(new AbstractListModel() {
+		JLabel lblRoles = new JLabel("ROLES:");
+		
+		JLabel lblExistingUsers = new JLabel("Existing Users");
+		lblExistingUsers.setHorizontalAlignment(SwingConstants.CENTER);
+		
+		JButton btnUpdateUser = new JButton("Update User");
+		
+		JButton btnDeleteUser = new JButton("Delete User");
+		
+		JScrollPane scrollPaneExistingUsers = new JScrollPane();
+		
+		JList listExistingUsers = new JList();
+		scrollPaneExistingUsers.setViewportView(listExistingUsers);
+		
+		JPanel panelBottomBuffer = new JPanel();
+		
+		JScrollPane scrollPaneSchemas = new JScrollPane();
+		
+		JScrollPane scrollPaneRoles = new JScrollPane();
+		GroupLayout gl_panelExistingUsers = new GroupLayout(panelExistingUsers);
+		gl_panelExistingUsers.setHorizontalGroup(
+			gl_panelExistingUsers.createParallelGroup(Alignment.TRAILING)
+				.addComponent(panelBottomBuffer, GroupLayout.PREFERRED_SIZE, 856, GroupLayout.PREFERRED_SIZE)
+				.addGroup(Alignment.LEADING, gl_panelExistingUsers.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(lblUsers, GroupLayout.PREFERRED_SIZE, 61, GroupLayout.PREFERRED_SIZE)
+					.addGap(785))
+				.addGroup(gl_panelExistingUsers.createSequentialGroup()
+					.addGroup(gl_panelExistingUsers.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panelExistingUsers.createSequentialGroup()
+							.addContainerGap()
+							.addComponent(lblExistingUsers, GroupLayout.DEFAULT_SIZE, 830, Short.MAX_VALUE))
+						.addGroup(Alignment.TRAILING, gl_panelExistingUsers.createSequentialGroup()
+							.addGap(10)
+							.addComponent(scrollPaneExistingUsers, GroupLayout.DEFAULT_SIZE, 213, Short.MAX_VALUE)
+							.addGap(6)
+							.addGroup(gl_panelExistingUsers.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panelExistingUsers.createSequentialGroup()
+									.addComponent(scrollPaneSchemas, GroupLayout.DEFAULT_SIZE, 383, Short.MAX_VALUE)
+									.addGap(6))
+								.addGroup(gl_panelExistingUsers.createSequentialGroup()
+									.addComponent(lblSchemas, GroupLayout.PREFERRED_SIZE, 62, GroupLayout.PREFERRED_SIZE)
+									.addGap(327)))
+							.addGroup(gl_panelExistingUsers.createParallelGroup(Alignment.LEADING)
+								.addComponent(lblRoles, GroupLayout.PREFERRED_SIZE, 61, GroupLayout.PREFERRED_SIZE)
+								.addGroup(gl_panelExistingUsers.createParallelGroup(Alignment.LEADING, false)
+									.addGroup(gl_panelExistingUsers.createSequentialGroup()
+										.addGap(15)
+										.addComponent(btnUpdateUser, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+									.addGroup(gl_panelExistingUsers.createSequentialGroup()
+										.addGap(15)
+										.addComponent(btnDeleteUser, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE))
+									.addComponent(scrollPaneRoles, GroupLayout.DEFAULT_SIZE, 222, Short.MAX_VALUE)))))
+					.addGap(16))
+		);
+		gl_panelExistingUsers.setVerticalGroup(
+			gl_panelExistingUsers.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panelExistingUsers.createSequentialGroup()
+					.addComponent(lblExistingUsers)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addGroup(gl_panelExistingUsers.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblUsers)
+						.addComponent(lblSchemas)
+						.addComponent(lblRoles))
+					.addGap(11)
+					.addGroup(gl_panelExistingUsers.createParallelGroup(Alignment.TRAILING)
+						.addComponent(scrollPaneExistingUsers, GroupLayout.DEFAULT_SIZE, 529, Short.MAX_VALUE)
+						.addComponent(scrollPaneSchemas, GroupLayout.DEFAULT_SIZE, 529, Short.MAX_VALUE)
+						.addGroup(gl_panelExistingUsers.createSequentialGroup()
+							.addPreferredGap(ComponentPlacement.UNRELATED)
+							.addComponent(scrollPaneRoles, GroupLayout.PREFERRED_SIZE, 435, GroupLayout.PREFERRED_SIZE)
+							.addPreferredGap(ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
+							.addComponent(btnUpdateUser)
+							.addGap(6)
+							.addComponent(btnDeleteUser)))
+					.addGap(6)
+					.addComponent(panelBottomBuffer, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+		);
+		
+		JList lstRoles = new JList();
+		scrollPaneRoles.setViewportView(lstRoles);
+		lstRoles.setModel(new AbstractListModel() {
 			String[] values = new String[] {"ADMIN_ALL_DATABASES", "LOCAL_DB_ADMIN", "WRITE", "READ"};
 			public int getSize() {
 				return values.length;
@@ -196,66 +423,18 @@ public class ManageUsers extends JFrame {
 			}
 		});
 		
-		JLabel lblSchemas = new JLabel("SCHEMAS:");
-		
-		JLabel lblRoles = new JLabel("ROLES:");
-		
-		JLabel lblExistingUsers = new JLabel("Existing Users");
-		
-		JButton btnNewButton = new JButton("Update User");
-		
-		JButton btnDeleteUser = new JButton("Delete User");
-		GroupLayout gl_panel_1 = new GroupLayout(panel_1);
-		gl_panel_1.setHorizontalGroup(
-			gl_panel_1.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_1.createSequentialGroup()
-					.addGap(6)
-					.addComponent(list, GroupLayout.DEFAULT_SIZE, 227, Short.MAX_VALUE)
-					.addPreferredGap(ComponentPlacement.UNRELATED)
-					.addComponent(list_1, GroupLayout.DEFAULT_SIZE, 383, Short.MAX_VALUE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_panel_1.createParallelGroup(Alignment.TRAILING)
-						.addComponent(list_2, GroupLayout.DEFAULT_SIZE, 227, Short.MAX_VALUE)
-						.addComponent(btnDeleteUser, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 227, Short.MAX_VALUE)
-						.addComponent(btnNewButton, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 217, Short.MAX_VALUE))
-					.addContainerGap())
-				.addGroup(gl_panel_1.createSequentialGroup()
-					.addGap(99)
-					.addComponent(lblUsers, GroupLayout.DEFAULT_SIZE, 62, Short.MAX_VALUE)
-					.addGap(220)
-					.addGroup(gl_panel_1.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panel_1.createSequentialGroup()
-							.addComponent(lblExistingUsers, GroupLayout.PREFERRED_SIZE, 96, GroupLayout.PREFERRED_SIZE)
-							.addContainerGap())
-						.addGroup(gl_panel_1.createSequentialGroup()
-							.addComponent(lblSchemas, GroupLayout.PREFERRED_SIZE, 62, GroupLayout.PREFERRED_SIZE)
-							.addGap(290)
-							.addComponent(lblRoles, GroupLayout.DEFAULT_SIZE, 62, Short.MAX_VALUE)
-							.addGap(74))))
-		);
-		gl_panel_1.setVerticalGroup(
-			gl_panel_1.createParallelGroup(Alignment.LEADING)
-				.addGroup(Alignment.TRAILING, gl_panel_1.createSequentialGroup()
-					.addComponent(lblExistingUsers)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_panel_1.createParallelGroup(Alignment.BASELINE)
-						.addComponent(lblSchemas, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-						.addComponent(lblRoles)
-						.addComponent(lblUsers))
-					.addGroup(gl_panel_1.createParallelGroup(Alignment.LEADING)
-						.addGroup(Alignment.TRAILING, gl_panel_1.createSequentialGroup()
-							.addComponent(btnNewButton)
-							.addGap(5)
-							.addComponent(btnDeleteUser)
-							.addGap(20))
-						.addGroup(gl_panel_1.createSequentialGroup()
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addGroup(gl_panel_1.createParallelGroup(Alignment.BASELINE)
-								.addComponent(list, GroupLayout.DEFAULT_SIZE, 594, Short.MAX_VALUE)
-								.addComponent(list_1, GroupLayout.DEFAULT_SIZE, 594, Short.MAX_VALUE)
-								.addComponent(list_2, GroupLayout.PREFERRED_SIZE, 513, GroupLayout.PREFERRED_SIZE)))))
-		);
-		panel_1.setLayout(gl_panel_1);
+		JList lstSchemas = new JList();
+		scrollPaneSchemas.setViewportView(lstSchemas);
+		panelExistingUsers.setLayout(gl_panelExistingUsers);
 		getContentPane().setLayout(groupLayout);
+	}
+	
+	public static void main (String args[]) {
+		LoginCredentials loginCredentials = new LoginCredentials();
+		ManageUsers manageUsers = new ManageUsers(loginCredentials);
+		FrameUtil.setSize(manageUsers, 1200, 800);
+		FrameUtil.centerWindow(manageUsers);
+		manageUsers.setVisible(true);
+		
 	}
 }
