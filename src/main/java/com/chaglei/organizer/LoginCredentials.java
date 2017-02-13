@@ -1,45 +1,135 @@
 package com.chaglei.organizer;
 
-import javax.swing.JFrame;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
+import com.mongodb.MongoClient;
 
 import util.ConfigData;
 import util.FrameUtil;
 import util.MongoDBUtils;
 
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.LayoutStyle.ComponentPlacement;
-
-import com.mongodb.MongoClient;
-
-import javax.swing.JTextField;
-import javax.swing.JPasswordField;
-import javax.swing.JButton;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-import javax.swing.SwingConstants;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-
-import java.awt.Component;
-
 public class LoginCredentials extends JFrame {
 
+	final String COLLECTION_TO_COUNT = "document_type";
 	private static final long serialVersionUID = 1L;
 	private JTextField txtHostname;
 	private JTextField txtPort;
-	private JTextField txtDBSchema;
+	private JTextField txtDBDataSchema;
 	private JTextField txtUserName;
 	private JPasswordField txtPassword;
 	private JFrame jFrameParentToClose = null;
+	protected boolean isLoggedIn = false;
+	protected MongoClient mongoClient = null;
 	
 	static LoginCredentials loginCredentials;
 	private JTextField txtAuthSchema;
 
 	public LoginCredentials() {
+		buildGUI();
+		addCloseListener();
+		populateTextFields();
+		setVisible(true);
+		FrameUtil.setSize(this, Integer.parseInt(ConfigData.getLoginCredentialsWidth()), Integer.parseInt(ConfigData.getLoginCredentialsHeight()));
+		FrameUtil.centerWindow(this);
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	}
+	
+	protected void doClose() {
+		if (this.getDefaultCloseOperation() == JFrame.EXIT_ON_CLOSE || this.getDefaultCloseOperation() == JFrame.DISPOSE_ON_CLOSE) 
+		{
+			this.dispose();
+		} 
+		else 
+		{
+			this.setVisible(false);
+		}
+	}
+	
+	public void doLogin()
+	{
+		mongoClient = MongoDBUtils.connectToMongoDB(txtUserName.getText(), txtPassword.getPassword(), txtAuthSchema.getText(), txtHostname.getText(), txtPort.getText());
+		if(MongoDBUtils.checkConnection(mongoClient, this.getDBSchema(), COLLECTION_TO_COUNT) == true)
+		{
+			setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+			setVisible(false);
+			if(jFrameParentToClose != null)
+			{
+				jFrameParentToClose.dispose();
+			}
+			jFrameParentToClose = (JFrame) new DocumentOrganizer();
+		}
+		else
+		{
+			JOptionPane.showMessageDialog(getLoginCredentials(), "Couldn't retrieve data, either login is wrong or didn't connect.", "Could not retrieve data", JOptionPane.ERROR_MESSAGE);
+			if(mongoClient != null)
+			{
+				mongoClient.close();
+			}
+		}
+
+	}
+	
+	
+	protected void populateTextFields()
+	{
+		txtPassword.setText(ConfigData.getPassword());
+		txtUserName.setText(ConfigData.getUserName());
+		txtHostname.setText(ConfigData.getHostName());
+		txtPort.setText(ConfigData.getPort());
+		txtDBDataSchema.setText(ConfigData.getSchema());
+		txtAuthSchema.setText(ConfigData.getAuthSchema());
+		
+	}
+	
+	public String getHostName() { return txtHostname.getText(); }
+	public String getPort() { return txtPort.getText(); } 
+	public String getDBSchema() { return txtDBDataSchema.getText(); }
+	public String getUserName() { return txtUserName.getText(); }
+	public char[] getPassword() { return txtPassword.getPassword(); }
+	public String getAuthSchema() { return this.txtAuthSchema.getText(); }
+	public MongoClient getMongoClient() { return mongoClient; } //need to invoke doLogin() before this works
+	
+	public static void main(String[] args) 
+	{
+		loginCredentials = new LoginCredentials();
+	}
+	
+	public static LoginCredentials getLoginCredentials()
+	{
+		return LoginCredentials.loginCredentials;
+	}
+	
+	private void addCloseListener()
+	{
+		this.addWindowListener(new WindowAdapter() {
+	        public void windowClosing(WindowEvent we) {
+				if(mongoClient != null)
+				{
+					mongoClient.close();
+				}
+	         }
+	     }
+	);
+	}
+	
+	protected void buildGUI()
+	{
 		setTitle("Database Login Credentials");
 		setResizable(false);
 		setAlwaysOnTop(true);
@@ -60,35 +150,15 @@ public class LoginCredentials extends JFrame {
 		JLabel lblPassword = new JLabel("password:");
 		
 		txtUserName = new JTextField();
-		txtUserName.setText(ConfigData.getUserName());
 		txtUserName.setColumns(10);
 		
 		txtPassword = new JPasswordField();
 		txtPassword.setColumns(10);
-		txtPassword.setText(ConfigData.getPassword());
 		
 		JButton btnLogin = new JButton("Login");
 		btnLogin.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				MongoClient mongoClient = MongoDBUtils.connectToMongoDB(txtUserName.getText(), txtPassword.getPassword(), txtDBSchema.getText(), txtHostname.getText(), txtPort.getText());
-				if(MongoDBUtils.checkConnection(mongoClient) == true)
-				{
-					getLoginCredentials().setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-					getLoginCredentials().setVisible(false);
-					if(jFrameParentToClose != null)
-					{
-						jFrameParentToClose.dispose();
-					}
-					jFrameParentToClose = (JFrame) new DocumentOrganizer();
-				}
-				else
-				{
-					JOptionPane.showMessageDialog(getLoginCredentials(), "Couldn't retrieve data, either login is wrong or didn't connect.", "Could not retrieve data", JOptionPane.ERROR_MESSAGE);
-				}
-				if(mongoClient != null)
-				{
-					mongoClient.close();
-				}
+				doLogin();
 			}
 		});
 		
@@ -102,13 +172,11 @@ public class LoginCredentials extends JFrame {
 		JLabel lblHostname = new JLabel("hostname:");
 		
 		txtHostname = new JTextField();
-		txtHostname.setText(ConfigData.getHostName());
 		txtHostname.setColumns(10);
 		
 		JLabel lblPort = new JLabel("port:");
 		
 		txtPort = new JTextField();
-		txtPort.setText(ConfigData.getPort());
 		txtPort.setColumns(10);
 		
 		JLabel lblSchema = new JLabel("data schema:");
@@ -117,23 +185,22 @@ public class LoginCredentials extends JFrame {
 		txtAuthSchema.setText((String) null);
 		txtAuthSchema.setColumns(10);
 		
-		txtDBSchema = new JTextField();
-		txtDBSchema.getDocument().addDocumentListener(new DocumentListener() {
+		txtDBDataSchema = new JTextField();
+		txtDBDataSchema.getDocument().addDocumentListener(new DocumentListener() {
 			public void changedUpdate(DocumentEvent e) {
-				txtAuthSchema.setText(txtDBSchema.getText());
+				txtAuthSchema.setText(txtDBDataSchema.getText());
 			}
 
 			public void removeUpdate(DocumentEvent e) {
-				txtAuthSchema.setText(txtDBSchema.getText());
+				txtAuthSchema.setText(txtDBDataSchema.getText());
 			}
 
 			public void insertUpdate(DocumentEvent e) {
-				txtAuthSchema.setText(txtDBSchema.getText());
+				txtAuthSchema.setText(txtDBDataSchema.getText());
 			}
 		});
 		
-		txtDBSchema.setText(ConfigData.getSchema());
-		txtDBSchema.setColumns(10);
+		txtDBDataSchema.setColumns(10);
 		
 		JLabel lblAuthenticationSchema = new JLabel("authentication schema:");
 		
@@ -166,7 +233,7 @@ public class LoginCredentials extends JFrame {
 						.addComponent(lblHostname, GroupLayout.PREFERRED_SIZE, 74, GroupLayout.PREFERRED_SIZE))
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
 						.addComponent(txtPort, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 370, Short.MAX_VALUE)
-						.addComponent(txtDBSchema, GroupLayout.PREFERRED_SIZE, 252, GroupLayout.PREFERRED_SIZE)
+						.addComponent(txtDBDataSchema, GroupLayout.PREFERRED_SIZE, 252, GroupLayout.PREFERRED_SIZE)
 						.addComponent(txtUserName, GroupLayout.DEFAULT_SIZE, 370, Short.MAX_VALUE)
 						.addComponent(txtPassword, GroupLayout.DEFAULT_SIZE, 370, Short.MAX_VALUE)
 						.addComponent(txtAuthSchema, GroupLayout.PREFERRED_SIZE, 252, GroupLayout.PREFERRED_SIZE)
@@ -187,7 +254,7 @@ public class LoginCredentials extends JFrame {
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(gl_panel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblSchema)
-						.addComponent(txtDBSchema, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addComponent(txtDBDataSchema, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(gl_panel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblUsername)
@@ -212,36 +279,5 @@ public class LoginCredentials extends JFrame {
 		);
 		panel.setLayout(gl_panel);
 		getContentPane().setLayout(groupLayout);
-		txtAuthSchema.setText(ConfigData.getAuthSchema());
-	}
-	
-	protected void doClose() {
-		if (this.getDefaultCloseOperation() == JFrame.EXIT_ON_CLOSE
-				|| this.getDefaultCloseOperation() == JFrame.DISPOSE_ON_CLOSE) {
-			this.dispose();
-		} else {
-			this.setVisible(false);
-		}
-	}
-	
-	public String getHostName() { return txtHostname.getText(); }
-	public String getPort() { return txtPort.getText(); } 
-	public String getDBSchema() { return txtDBSchema.getText(); }
-	public String getUserName() { return txtUserName.getText(); }
-	public char[] getPassword() { return txtPassword.getPassword(); }
-	
-	
-	public static void main(String[] args) {
-		loginCredentials = new LoginCredentials();
-		loginCredentials.setVisible(true);
-		FrameUtil.setSize(loginCredentials, 498, 270);
-		FrameUtil.centerWindow(loginCredentials);
-		loginCredentials.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-	}
-	
-	public static LoginCredentials getLoginCredentials()
-	{
-		return LoginCredentials.loginCredentials;
 	}
 }

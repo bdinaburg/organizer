@@ -1,27 +1,34 @@
 package com.chaglei.organizer;
 
-import javax.swing.JFrame;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Vector;
+
+import javax.swing.AbstractListModel;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
-import javax.swing.JPanel;
-import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.AbstractListModel;
-import javax.swing.JButton;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.JCheckBox;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
-import util.FrameUtil;
+import com.mongodb.MongoClient;
 
-import java.awt.Color;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.ActionEvent;
+import transientPojos.UserDBRoles;
+import util.FrameUtil;
+import util.MongoDBUtils;
 
 public class ManageUsers extends JFrame {
 	/**
@@ -32,20 +39,125 @@ public class ManageUsers extends JFrame {
 	private JTextField txtHostname;
 	private JTextField txtPort;
 	private JTextField txtDataSchema;
-	private JTextField txtAdminSchema;
-	private JTextField txtUserName;
-	private JTextField txtPassword;
-	private JTextField txtDataSchemaNewUser;
-	private JTextField txtAdminSchemaNewUser;
+	private JTextField txtAuthSchema;
+	private JTextField txtNewUserUserName;
+	private JTextField txtNewUserPassword;
+	private JComboBox<String> jComboBoxNewUserSchema;
+	protected LoginCredentials loginCredentials;
+	private JPanel panelExistingUsers;
+	private JPanel panelExistingConnectionInformation;
+	private JPanel panelNewUser;
+	UserDBRoles userDBRolesForLoggedInUser;
 	public ManageUsers(LoginCredentials loginCredentials) {
+		this.loginCredentials = loginCredentials;
+		buildGUI();
+		UserDBRoles userDBRoles = populateCurrentUserFields(panelExistingConnectionInformation);
+		populateNewUserFields();
+		populateExistingUsers(userDBRoles);
+	}
+	
+	
+	
+	
+	public static void main (String args[]) {
+		LoginCredentials loginCredentials = new LoginCredentials();
+		loginCredentials.doLogin();
+		ManageUsers manageUsers = new ManageUsers(loginCredentials);
+		FrameUtil.setSize(manageUsers, 1200, 800);
+		FrameUtil.centerWindow(manageUsers);
+		manageUsers.setVisible(true);
 		
-		JPanel panelNewUser = new JPanel();
+	}
+	
+	protected void createNewUser()
+	{
+		String strUserName = txtNewUserUserName.getText();
+		String strPassword = txtNewUserPassword.getText();
+		String strSchema =  String.valueOf(jComboBoxNewUserSchema.getSelectedItem());
+		MongoClient mongoClient = loginCredentials.getMongoClient();
+
+		HashSet<String> hashSetOfRoles = new HashSet<String>(10);
+		for (Component component : panelNewUser.getComponents()) {
+		    if (component instanceof JCheckBox) { 
+		    	JCheckBox checkbox = (JCheckBox) component;
+		    	if(checkbox.isSelected() == true)
+		    	{
+		    		hashSetOfRoles.add(checkbox.getText());
+		    	}
+		    }
+		}
+		MongoDBUtils.createUser(mongoClient, strSchema, strUserName, strPassword, hashSetOfRoles);
+	}
+
+	protected void populateExistingUsers(UserDBRoles userDBRoles)
+	{
+		if(userDBRoles.getIsGlobalAdmin() == true);
+		{
+			Vector<UserDBRoles> vectorUserDBRoles = MongoDBUtils.getRolesForAllUsers(loginCredentials.getMongoClient(), loginCredentials.getAuthSchema());
+		}
+	}
+	
+	protected void populateNewUserFields()
+	{
+		jComboBoxNewUserSchema.addItem(txtDataSchema.getText());
+		jComboBoxNewUserSchema.addItem(txtAuthSchema.getText());
+	}
+	
+	protected UserDBRoles populateCurrentUserFields(final JPanel userJPanel)
+	{
+		this.txtCurrentlyLoggedInAs.setText(loginCredentials.getUserName());
+		this.txtHostname.setText(loginCredentials.getHostName());
+		this.txtPort.setText(loginCredentials.getPort());
+		this.txtDataSchema.setText(loginCredentials.getDBSchema());
+		this.txtAuthSchema.setText(loginCredentials.getAuthSchema());
+
+		Vector<JCheckBox> vectorOfCheckBoxes = new Vector<JCheckBox>(10);
+		for (Component component : userJPanel.getComponents()) {
+		    if (component instanceof JCheckBox) { 
+		    	vectorOfCheckBoxes.add((JCheckBox)component);
+		    }
+		}
+		
+		MongoClient mongoClient = loginCredentials.getMongoClient();
+		userDBRolesForLoggedInUser = MongoDBUtils.getRolesForUser(mongoClient, txtAuthSchema.getText(), txtDataSchema.getText(),  txtCurrentlyLoggedInAs.getText());
+		String strRolesForWhichSchema = txtDataSchema.getText();
+		if(userDBRolesForLoggedInUser != null)
+		{
+			txtDataSchema.setBackground(Color.GREEN);
+		}
+		if(userDBRolesForLoggedInUser == null)
+		{
+			userDBRolesForLoggedInUser = MongoDBUtils.getRolesForUser(mongoClient, txtAuthSchema.getText(), txtAuthSchema.getText(),  txtCurrentlyLoggedInAs.getText());
+			strRolesForWhichSchema = txtAuthSchema.getText();
+			userDBRolesForLoggedInUser.setIsGlobalAdmin(true);
+			txtAuthSchema.setBackground(Color.GREEN);
+		}
+		
+		Set<String> rolesSet = userDBRolesForLoggedInUser.getRoles(strRolesForWhichSchema);
+		
+		for(String str : rolesSet)
+		{
+			for(JCheckBox checkbox : vectorOfCheckBoxes)
+			{
+				if(str.equalsIgnoreCase(checkbox.getText()) == true)
+				{
+					checkbox.setSelected(true);
+				}
+			}
+		}
+		
+		return userDBRolesForLoggedInUser;
+	}
+	
+	protected void buildGUI()
+	{
+		panelNewUser = new JPanel();
 		panelNewUser.setBorder(new LineBorder(new Color(0, 0, 0)));
 		
-		JPanel panelExistingUsers = new JPanel();
+		panelExistingUsers = new JPanel();
 		panelExistingUsers.setBorder(new LineBorder(new Color(0, 0, 0)));
 		
-		JPanel panelExistingConnectionInformation = new JPanel();
+		panelExistingConnectionInformation = new JPanel();
 		panelExistingConnectionInformation.setBorder(new LineBorder(new Color(0, 0, 0)));
 		GroupLayout groupLayout = new GroupLayout(getContentPane());
 		groupLayout.setHorizontalGroup(
@@ -72,7 +184,7 @@ public class ManageUsers extends JFrame {
 		txtCurrentlyLoggedInAs.setText(loginCredentials.getUserName());
 		txtCurrentlyLoggedInAs.setColumns(10);
 		
-		JLabel lblCurrentlyLoggedInAs = new JLabel("Currently Login:");
+		JLabel lblCurrentlyLoggedInAs = new JLabel("Current Login:");
 		
 		JLabel lblHostname = new JLabel("Hostname:");
 		
@@ -97,24 +209,33 @@ public class ManageUsers extends JFrame {
 		txtDataSchema.setColumns(10);
 		txtDataSchema.setText(loginCredentials.getDBSchema());
 		
-		JCheckBox chckbxRead = new JCheckBox("Read");
-		chckbxRead.setEnabled(false);
+		JCheckBox chkRead = new JCheckBox("read");
+		chkRead.setEnabled(false);
 		
-		JCheckBox chckbxWrite = new JCheckBox("Write");
-		chckbxWrite.setEnabled(false);
+		JCheckBox chkReadWrite = new JCheckBox("readWrite");
+		chkReadWrite.setEnabled(false);
 		
-		JCheckBox chckbxSchemaAdmin = new JCheckBox("Data Schema Admin");
-		chckbxSchemaAdmin.setEnabled(false);
+		JCheckBox chkUserAdminAnyDatabase = new JCheckBox("userAdminAnyDatabase");
+		chkUserAdminAnyDatabase.setEnabled(false);
 		
-		JCheckBox chckbxGlobalAdmin = new JCheckBox("Admin ALL Dbs");
-		chckbxGlobalAdmin.setEnabled(false);
+		JCheckBox chkRoot = new JCheckBox("root");
+		chkRoot.setEnabled(false);
 		
-		JLabel lblAdminSchema = new JLabel("Admin Schema:");
+		JLabel lblAuthSchema = new JLabel("Auth Schema:");
 		
-		txtAdminSchema = new JTextField();
-		txtAdminSchema.setEditable(false);
-		txtAdminSchema.setText("admin");
-		txtAdminSchema.setColumns(10);
+		txtAuthSchema = new JTextField();
+		txtAuthSchema.setEditable(false);
+		txtAuthSchema.setText("admin");
+		txtAuthSchema.setColumns(10);
+		
+		JCheckBox chckbxUserAdmin = new JCheckBox("userAdmin");
+		chckbxUserAdmin.setEnabled(false);
+		
+		JCheckBox chckbxRoot = new JCheckBox("dbAdmin");
+		chckbxRoot.setEnabled(false);
+		
+		JCheckBox chckbxDbowner = new JCheckBox("dbOwner");
+		chckbxDbowner.setEnabled(false);
 		GroupLayout gl_panelExistingConnectionInformation = new GroupLayout(panelExistingConnectionInformation);
 		gl_panelExistingConnectionInformation.setHorizontalGroup(
 			gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
@@ -126,18 +247,20 @@ public class ManageUsers extends JFrame {
 							.addGap(18)
 							.addComponent(txtPort, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
-							.addComponent(chckbxSchemaAdmin, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+							.addComponent(chkUserAdminAnyDatabase, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
 						.addComponent(label, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
 						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 							.addComponent(lblDataSchema, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
 							.addComponent(txtDataSchema, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
-							.addComponent(chckbxGlobalAdmin, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+							.addComponent(chkRoot, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
 						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
-							.addComponent(lblAdminSchema, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
+							.addComponent(lblAuthSchema, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
 							.addGap(18)
-							.addComponent(txtAdminSchema, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE))
+							.addComponent(txtAuthSchema, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
+							.addGap(18)
+							.addComponent(chckbxUserAdmin, GroupLayout.PREFERRED_SIZE, 190, GroupLayout.PREFERRED_SIZE))
 						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 							.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
 								.addComponent(lblHostname, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
@@ -147,12 +270,16 @@ public class ManageUsers extends JFrame {
 								.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 									.addComponent(txtCurrentlyLoggedInAs, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
 									.addGap(18)
-									.addComponent(chckbxRead, GroupLayout.PREFERRED_SIZE, 190, GroupLayout.PREFERRED_SIZE))
+									.addComponent(chkRead, GroupLayout.PREFERRED_SIZE, 190, GroupLayout.PREFERRED_SIZE))
 								.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 									.addComponent(txtHostname, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
 									.addGap(18)
-									.addComponent(chckbxWrite, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
-					.addContainerGap(482, Short.MAX_VALUE))
+									.addComponent(chkReadWrite, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
+					.addGap(18)
+					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
+						.addComponent(chckbxRoot, GroupLayout.PREFERRED_SIZE, 190, GroupLayout.PREFERRED_SIZE)
+						.addComponent(chckbxDbowner, GroupLayout.PREFERRED_SIZE, 190, GroupLayout.PREFERRED_SIZE))
+					.addContainerGap(263, Short.MAX_VALUE))
 		);
 		gl_panelExistingConnectionInformation.setVerticalGroup(
 			gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
@@ -161,7 +288,8 @@ public class ManageUsers extends JFrame {
 					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblCurrentlyLoggedInAs)
 						.addComponent(txtCurrentlyLoggedInAs, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(chckbxRead))
+						.addComponent(chkRead)
+						.addComponent(chckbxRoot))
 					.addGap(1)
 					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.TRAILING)
 						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
@@ -171,14 +299,16 @@ public class ManageUsers extends JFrame {
 									.addComponent(lblHostname))
 								.addComponent(txtHostname, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 							.addPreferredGap(ComponentPlacement.RELATED))
-						.addComponent(chckbxWrite))
+						.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.BASELINE)
+							.addComponent(chkReadWrite)
+							.addComponent(chckbxDbowner)))
 					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
 						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
 							.addGap(3)
 							.addComponent(lblPort))
 						.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.BASELINE)
 							.addComponent(txtPort, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-							.addComponent(chckbxSchemaAdmin)))
+							.addComponent(chkUserAdminAnyDatabase)))
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
 						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
@@ -186,110 +316,104 @@ public class ManageUsers extends JFrame {
 							.addComponent(lblDataSchema))
 						.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.BASELINE)
 							.addComponent(txtDataSchema, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-							.addComponent(chckbxGlobalAdmin)))
+							.addComponent(chkRoot)))
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
-							.addGap(2)
-							.addComponent(lblAdminSchema))
-						.addComponent(txtAdminSchema, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.TRAILING)
+						.addGroup(gl_panelExistingConnectionInformation.createParallelGroup(Alignment.LEADING)
+							.addGroup(gl_panelExistingConnectionInformation.createSequentialGroup()
+								.addGap(2)
+								.addComponent(lblAuthSchema))
+							.addComponent(txtAuthSchema, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addComponent(chckbxUserAdmin))
 					.addGap(137)
 					.addComponent(label)
 					.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
 		);
 		panelExistingConnectionInformation.setLayout(gl_panelExistingConnectionInformation);
 		
-		JLabel lblNewUsers = new JLabel("New User");
+		JLabel lblNewUsers = new JLabel("Add New User");
 		
 		JLabel lblUserName = new JLabel("User Name:");
 		
-		txtUserName = new JTextField();
-		txtUserName.setColumns(10);
+		txtNewUserUserName = new JTextField();
+		txtNewUserUserName.setColumns(10);
 		
 		JLabel lblPassword = new JLabel("Password:");
 		
-		txtPassword = new JTextField();
+		txtNewUserPassword = new JTextField();
 		//txtPassword.setText(new String(loginCredentials.getPassword()));
-		txtPassword.setColumns(10);
+		txtNewUserPassword.setColumns(10);
 		
-		JLabel lblDataSchemaNewUser = new JLabel("Data Schema:");
+		JLabel lblNewUserSchema = new JLabel("Schema:");
 		
-		txtDataSchemaNewUser = new JTextField();
-		txtDataSchemaNewUser.setColumns(10);
+		jComboBoxNewUserSchema = new JComboBox<String>();
 		
-		JLabel lblAdminSchema_1 = new JLabel("Admin Schema:");
+		JCheckBox chkNewUserRead = new JCheckBox("read");
 		
-		txtAdminSchemaNewUser = new JTextField();
-		txtAdminSchemaNewUser.setEditable(false);
-		txtAdminSchemaNewUser.setColumns(10);
+		JCheckBox chkNewUserUserAdminAnyDatabase = new JCheckBox("userAdminAnyDatabase");
 		
-		JCheckBox checkBoxReadNewUser = new JCheckBox("Read");
-		
-		JCheckBox checkBoxWriteNewUser = new JCheckBox("Write");
-		
-		JCheckBox checkBoxDataSchemaAdminNewUser = new JCheckBox("Data Schema Admin");
-		
-		JCheckBox checkBoxAdminALLDbsNewUser = new JCheckBox("Admin ALL Dbs");
-		checkBoxAdminALLDbsNewUser.addItemListener(new ItemListener() {
-
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                if(e.getStateChange() == ItemEvent.SELECTED)
-                {
-                	txtAdminSchemaNewUser.setText(txtAdminSchema.getText());
-                }
-                else
-                {
-                	txtAdminSchemaNewUser.setText("");
-                }
-                    
-            }
-        });
+		JCheckBox chkNewUserRoot = new JCheckBox("root");
 		
 		JButton btnCreateUser = new JButton("Create User");
+		btnCreateUser.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				createNewUser();
+			}
+		});
+		
+		JCheckBox chkNewUserReadWrite = new JCheckBox("readWrite");
+		
+		JCheckBox chkUserAdmin = new JCheckBox("userAdmin");
+		
+		JCheckBox chkNewUserDBAdmin = new JCheckBox("dbAdmin");
+		
+		JCheckBox chkNewUserDBOwner = new JCheckBox("dbOwner");
 		GroupLayout gl_panelNewUser = new GroupLayout(panelNewUser);
 		gl_panelNewUser.setHorizontalGroup(
 			gl_panelNewUser.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panelNewUser.createSequentialGroup()
-					.addGap(6)
-					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.TRAILING)
-						.addComponent(btnCreateUser, GroupLayout.PREFERRED_SIZE, 266, GroupLayout.PREFERRED_SIZE)
-						.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING, false)
-							.addGroup(gl_panelNewUser.createSequentialGroup()
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(checkBoxReadNewUser, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-							.addGroup(gl_panelNewUser.createSequentialGroup()
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(lblAdminSchema_1, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(txtAdminSchemaNewUser))
-							.addGroup(gl_panelNewUser.createSequentialGroup()
-								.addGap(124)
-								.addComponent(lblNewUsers))
-							.addGroup(gl_panelNewUser.createSequentialGroup()
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(lblDataSchemaNewUser, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE)
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(txtDataSchemaNewUser))
-							.addGroup(gl_panelNewUser.createSequentialGroup()
-								.addPreferredGap(ComponentPlacement.RELATED)
+					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panelNewUser.createSequentialGroup()
+							.addGap(6)
+							.addGroup(gl_panelNewUser.createParallelGroup(Alignment.TRAILING)
+								.addComponent(btnCreateUser, GroupLayout.PREFERRED_SIZE, 266, GroupLayout.PREFERRED_SIZE)
 								.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
-									.addComponent(lblUserName)
-									.addComponent(lblPassword, GroupLayout.PREFERRED_SIZE, 56, GroupLayout.PREFERRED_SIZE))
-								.addGap(45)
-								.addGroup(gl_panelNewUser.createParallelGroup(Alignment.TRAILING)
-									.addComponent(txtUserName, GroupLayout.DEFAULT_SIZE, 176, Short.MAX_VALUE)
-									.addComponent(txtPassword)))
-							.addGroup(gl_panelNewUser.createSequentialGroup()
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
-									.addComponent(checkBoxAdminALLDbsNewUser, GroupLayout.DEFAULT_SIZE, 281, Short.MAX_VALUE)
-									.addComponent(checkBoxDataSchemaAdminNewUser, GroupLayout.DEFAULT_SIZE, 281, Short.MAX_VALUE)))))
-					.addContainerGap())
-				.addGroup(gl_panelNewUser.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(checkBoxWriteNewUser, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-					.addGap(32))
+									.addGroup(gl_panelNewUser.createSequentialGroup()
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addComponent(chkNewUserRead, GroupLayout.DEFAULT_SIZE, 281, Short.MAX_VALUE))
+									.addGroup(gl_panelNewUser.createSequentialGroup()
+										.addGap(124)
+										.addComponent(lblNewUsers))
+									.addGroup(gl_panelNewUser.createSequentialGroup()
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+											.addComponent(chkNewUserRoot, GroupLayout.DEFAULT_SIZE, 281, Short.MAX_VALUE)
+											.addComponent(chkNewUserUserAdminAnyDatabase, GroupLayout.DEFAULT_SIZE, 281, Short.MAX_VALUE)))
+									.addGroup(gl_panelNewUser.createSequentialGroup()
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+											.addComponent(lblPassword, GroupLayout.PREFERRED_SIZE, 93, GroupLayout.PREFERRED_SIZE)
+											.addComponent(lblUserName)
+											.addComponent(lblNewUserSchema, GroupLayout.PREFERRED_SIZE, 115, GroupLayout.PREFERRED_SIZE))
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+											.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
+												.addComponent(txtNewUserUserName, GroupLayout.DEFAULT_SIZE, 162, Short.MAX_VALUE)
+												.addComponent(jComboBoxNewUserSchema, GroupLayout.DEFAULT_SIZE, 162, Short.MAX_VALUE))
+											.addComponent(txtNewUserPassword, GroupLayout.DEFAULT_SIZE, 184, Short.MAX_VALUE))))))
+						.addGroup(gl_panelNewUser.createSequentialGroup()
+							.addContainerGap()
+							.addComponent(chkNewUserReadWrite, GroupLayout.PREFERRED_SIZE, 281, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_panelNewUser.createSequentialGroup()
+							.addContainerGap()
+							.addComponent(chkUserAdmin, GroupLayout.PREFERRED_SIZE, 281, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_panelNewUser.createSequentialGroup()
+							.addContainerGap()
+							.addComponent(chkNewUserDBAdmin, GroupLayout.PREFERRED_SIZE, 281, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_panelNewUser.createSequentialGroup()
+							.addContainerGap()
+							.addComponent(chkNewUserDBOwner, GroupLayout.PREFERRED_SIZE, 281, GroupLayout.PREFERRED_SIZE)))
+					.addGap(26))
 		);
 		gl_panelNewUser.setVerticalGroup(
 			gl_panelNewUser.createParallelGroup(Alignment.LEADING)
@@ -298,31 +422,30 @@ public class ManageUsers extends JFrame {
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblUserName)
-						.addComponent(txtUserName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addComponent(txtNewUserUserName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 					.addGap(9)
 					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.BASELINE)
 						.addComponent(lblPassword)
-						.addComponent(txtPassword, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+						.addComponent(txtNewUserPassword, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.BASELINE)
-						.addComponent(lblDataSchemaNewUser)
-						.addComponent(txtDataSchemaNewUser, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-					.addGroup(gl_panelNewUser.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panelNewUser.createSequentialGroup()
-							.addGap(9)
-							.addComponent(lblAdminSchema_1))
-						.addGroup(gl_panelNewUser.createSequentialGroup()
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(txtAdminSchemaNewUser, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
-					.addPreferredGap(ComponentPlacement.UNRELATED)
-					.addComponent(checkBoxReadNewUser)
+						.addComponent(lblNewUserSchema)
+						.addComponent(jComboBoxNewUserSchema, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(30)
+					.addComponent(chkNewUserRead)
 					.addGap(3)
-					.addComponent(checkBoxWriteNewUser)
+					.addComponent(chkNewUserReadWrite)
 					.addPreferredGap(ComponentPlacement.UNRELATED)
-					.addComponent(checkBoxDataSchemaAdminNewUser)
+					.addComponent(chkNewUserUserAdminAnyDatabase)
 					.addGap(3)
-					.addComponent(checkBoxAdminALLDbsNewUser)
-					.addPreferredGap(ComponentPlacement.RELATED, 327, Short.MAX_VALUE)
+					.addComponent(chkNewUserRoot)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(chkUserAdmin)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(chkNewUserDBAdmin)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(chkNewUserDBOwner)
+					.addPreferredGap(ComponentPlacement.RELATED, 261, Short.MAX_VALUE)
 					.addComponent(btnCreateUser)
 					.addContainerGap())
 		);
@@ -343,8 +466,8 @@ public class ManageUsers extends JFrame {
 		
 		JScrollPane scrollPaneExistingUsers = new JScrollPane();
 		
-		JList listExistingUsers = new JList();
-		scrollPaneExistingUsers.setViewportView(listExistingUsers);
+		JList<String> lstExistingUsers = new JList<String>();
+		scrollPaneExistingUsers.setViewportView(lstExistingUsers);
 		
 		JPanel panelBottomBuffer = new JPanel();
 		
@@ -411,30 +534,12 @@ public class ManageUsers extends JFrame {
 					.addComponent(panelBottomBuffer, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 		);
 		
-		JList lstRoles = new JList();
+		JList<String> lstRoles = new JList<String>();
 		scrollPaneRoles.setViewportView(lstRoles);
-		lstRoles.setModel(new AbstractListModel() {
-			String[] values = new String[] {"ADMIN_ALL_DATABASES", "LOCAL_DB_ADMIN", "WRITE", "READ"};
-			public int getSize() {
-				return values.length;
-			}
-			public Object getElementAt(int index) {
-				return values[index];
-			}
-		});
-		
-		JList lstSchemas = new JList();
+			
+		JList<String> lstSchemas = new JList<String>();
 		scrollPaneSchemas.setViewportView(lstSchemas);
 		panelExistingUsers.setLayout(gl_panelExistingUsers);
 		getContentPane().setLayout(groupLayout);
-	}
-	
-	public static void main (String args[]) {
-		LoginCredentials loginCredentials = new LoginCredentials();
-		ManageUsers manageUsers = new ManageUsers(loginCredentials);
-		FrameUtil.setSize(manageUsers, 1200, 800);
-		FrameUtil.centerWindow(manageUsers);
-		manageUsers.setVisible(true);
-		
 	}
 }

@@ -32,7 +32,7 @@ import transientPojos.DocTypes.DocType;
 import util.DateUtil;
 import util.FileReadingUtils;
 
-public class MongoDBJDBC {
+public class MongoDBMorphia {
 	public static final String DATABASE_NAME = "borisStorage";
 	public static final String DOCUMENT_DESCRIPTION_STORE_NAME = "documents";
 	public static final String BINARY_DOCUMENTS_STORE_NAME = "binary_documents";
@@ -41,14 +41,24 @@ public class MongoDBJDBC {
 	public static String password = "PA$$Word12345";
 
 	
-	public static void main(String args[]) {
+	public static void main (String args[])
+	{
+		populateDatabaseWithDocTypes("borisdb");
+	}
+	
+/*	public static void main(String args[]) {
 
 		MongoClient mongoClient =  null;
+
+		
 		try {
 			mongoClient = connectToMongoDB();
 			//createDocumentsStore(mongoClient);
 			//createDocumentsBinaryStore(mongoClient);
 			//addSampleDocumentsToDescriptionStore(mongoClient);
+			
+			
+			*//** MORPHIA STUFF
 			final Morphia morphia = new Morphia();
 			MapperOptions options = new MapperOptions();
 			options.setStoreEmpties(true);
@@ -80,7 +90,10 @@ public class MongoDBJDBC {
 			document.addScannedFile(scannedFile);
 			datastore.save(document);
 			
-			/**
+			
+			**//*
+			
+			*//**
 			 * the following finds all scanned in files in the database
 			
 			final Query<ScannedFiles> query = datastore.createQuery(ScannedFiles.class);
@@ -92,18 +105,18 @@ public class MongoDBJDBC {
 				System.out.println(scannedFile.getId().toString());
 				//FileUtils.writeByteArrayToFile(new File("C:\\development\\receipt scans\\" + scannedFile.getSHA256HashOfChunk() + ".pdf"), scannedFile.getDocument_inbytearray());
 			}
-			*/ 
+			*//* 
 			
-			/**
+			*//**
 			 * delete an object by ID example
-			 */
-			/*ObjectId objectId = new ObjectId("587c007414223030c0081855");
+			 *//*
+			ObjectId objectId = new ObjectId("587c007414223030c0081855");
 			ScannedFiles scannedFile = datastore.get(ScannedFiles.class, objectId);
 			System.out.println(scannedFile.getModified_date());
-			datastore.delete(scannedFile);*/
+			datastore.delete(scannedFile);
 			
 			
-/*			File pdfFile = new File("C:\\development\\receipt scans\\img012.pdf");
+			File pdfFile = new File("C:\\development\\receipt scans\\img012.pdf");
 			InputStream is = FileUtils.openInputStream(pdfFile);
 			byte[] byteArrayPdfFile = IOUtils.toByteArray(is);
 			
@@ -115,18 +128,18 @@ public class MongoDBJDBC {
 			catch(Exception anyExc)
 			{
 				System.err.println(anyExc);
-			}*/
+			}
 			
 
-			/**
+			*//**
 			 * populate the database with various document types
-			 */
-			/*			
+			 *//*
+						
 			for(DocType dt : DocType.values())
 			{
 				DocumentType documentType = new DocumentType(dt);
 				datastore.save(documentType);
-			}*/			
+			}			
 			
 			
 			
@@ -142,7 +155,7 @@ public class MongoDBJDBC {
 		}
 
 	}
-	
+	*/
 	public static void queryDocuments(MongoClient mongoClient)
 	{
 		mongoClient.getDatabase(DATABASE_NAME);
@@ -206,4 +219,30 @@ public class MongoDBJDBC {
 		GridFSInputFile gridFSInputFile = gridfs.createFile(pdfFile);
 		gridFSInputFile.save();
 	}
+	
+	public static void populateDatabaseWithDocTypes(String dbName)
+	{
+		/**
+		 * populate the database with various document types
+		 */
+		MongoClient mongoClient = connectToMongoDB();	
+		final Morphia morphia = new Morphia();
+		MapperOptions options = new MapperOptions();
+		options.setStoreEmpties(true);
+		options.setStoreNulls(true);
+		morphia.getMapper().setOptions(options);
+		morphia.mapPackage("pojos");
+
+		final Datastore datastore = morphia.createDatastore(mongoClient, dbName);
+		datastore.ensureIndexes();
+
+		for(DocType dt : DocType.values())
+		{
+			DocumentType documentType = new DocumentType(dt);
+			datastore.save(documentType);
+		}	
+		
+		mongoClient.close();
+	}
+	
 }

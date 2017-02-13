@@ -41,6 +41,14 @@ public class ConfigData {
 	public static String getAuthSchema() {
 		return getPropertiesFile().getProperty("authschema");
 	}
+	
+	public static String getLoginCredentialsWidth() {
+		return getPropertiesFile().getProperty("loginCredentials.width");
+	}
+
+	public static String getLoginCredentialsHeight() {
+		return getPropertiesFile().getProperty("loginCredentials.height");
+	}
 
 	
 }

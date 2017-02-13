@@ -3,25 +3,29 @@ package mongodbtester;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.HashSet;
 import java.util.Properties;
 
-import util.DateUtil;
+import util.JSONBuilder;
 
-public class Test2 {
+public class Test3 {
 
 	public static void main(String[] args) {
 		//Test2 tst2 = new Test2();
 		//System.out.println(tst2.getFile());
-		writePropertiesFile();
+		testDates();
+		//writePropertiesFile();
 	}
 	
 	public static void testDates()
 	{
-		Date mydate = DateUtil.getDateObject("08/04/1981");
-		System.out.println(mydate);
+		HashSet<String> testRoles = new HashSet<String>();
+		testRoles.add("role1");
+		testRoles.add("role2");
+		
+		String test = JSONBuilder.buildCreateUserJSON("boris", "password", testRoles);
+		
+		System.out.println(test);
 
 	}
 
