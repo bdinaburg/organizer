@@ -4,11 +4,13 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
 import javax.swing.AbstractListModel;
+import javax.swing.DefaultListModel;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
@@ -23,6 +25,8 @@ import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import com.mongodb.MongoClient;
 
@@ -48,6 +52,9 @@ public class ManageUsers extends JFrame {
 	private JPanel panelExistingConnectionInformation;
 	private JPanel panelNewUser;
 	UserDBRoles userDBRolesForLoggedInUser;
+	JList<String> lstExistingUsers;
+	JList<String> lstSchemas;
+	JList<String> lstRoles;
 	public ManageUsers(LoginCredentials loginCredentials) {
 		this.loginCredentials = loginCredentials;
 		buildGUI();
@@ -91,12 +98,72 @@ public class ManageUsers extends JFrame {
 
 	protected void populateExistingUsers(UserDBRoles userDBRoles)
 	{
+		((DefaultListModel<String>)lstExistingUsers.getModel()).clear();
 		if(userDBRoles.getIsGlobalAdmin() == true);
 		{
 			Vector<UserDBRoles> vectorUserDBRoles = MongoDBUtils.getRolesForAllUsers(loginCredentials.getMongoClient(), loginCredentials.getAuthSchema());
+			/**
+			 * populated the list with user names, wow, I can't believe how verbose that is. Seems way overcomplicated
+			 */
+			HashMap<String, UserDBRoles> hashMapUserNameToUserDBRolesObject = new HashMap<String, UserDBRoles>();
+			((DefaultListModel<String>)lstExistingUsers.getModel()).clear();
+			
+			for(int i = 0; i < vectorUserDBRoles.size(); i++)
+			{
+				UserDBRoles userDBRolesObject = vectorUserDBRoles.get(i);
+				((DefaultListModel<String>)lstExistingUsers.getModel()).addElement(userDBRolesObject.getUser());
+				hashMapUserNameToUserDBRolesObject.put(userDBRolesObject.getUser() + (new Integer(i)).toString(), userDBRolesObject);
+			}
+			
+			lstExistingUsers.addListSelectionListener(new ListSelectionListener() {
+
+	            @Override
+	            public void valueChanged(ListSelectionEvent arg0) {
+	                if (!arg0.getValueIsAdjusting()) {
+	                	((DefaultListModel<String>)lstSchemas.getModel()).clear();
+	                	((DefaultListModel<String>)lstRoles.getModel()).clear();
+	                	UserDBRoles userDBRolesRetrievedFromHashMap = hashMapUserNameToUserDBRolesObject.get(lstExistingUsers.getSelectedValue() + lstExistingUsers.getSelectedIndex());
+	                	populateDBsWhenGivenAUser(userDBRolesRetrievedFromHashMap);
+	                }
+	            }
+	        });
+		
 		}
 	}
 	
+	private void populateDBsWhenGivenAUser(UserDBRoles userDBRoles)
+	{
+		Set<String> setUserDBs = userDBRoles.getDBs();
+		for(String strDB : setUserDBs)
+		{
+			((DefaultListModel<String>)lstSchemas.getModel()).addElement(strDB);
+		}
+		
+		lstSchemas.addListSelectionListener(new ListSelectionListener() {
+
+            @Override
+            public void valueChanged(ListSelectionEvent arg0) {
+                if (!arg0.getValueIsAdjusting()) {
+                	populateRolesWhenGivenADB(userDBRoles, lstSchemas.getSelectedValue());
+                }
+            }
+        });
+	}
+	
+	private void populateRolesWhenGivenADB(UserDBRoles userDBRoles, String strDB)
+	{
+		Set<String> setUserRoles = userDBRoles.getRoles(strDB);
+		//((DefaultListModel<String>)lstSchemas.getModel()).clear();
+		if(setUserRoles == null)
+		{
+			return;
+		}
+    	((DefaultListModel<String>)lstRoles.getModel()).clear();
+		for(String strRole : setUserRoles)
+		{
+			((DefaultListModel<String>)lstRoles.getModel()).addElement(strRole);
+		}
+	}
 	protected void populateNewUserFields()
 	{
 		jComboBoxNewUserSchema.addItem(txtDataSchema.getText());
@@ -466,7 +533,7 @@ public class ManageUsers extends JFrame {
 		
 		JScrollPane scrollPaneExistingUsers = new JScrollPane();
 		
-		JList<String> lstExistingUsers = new JList<String>();
+		lstExistingUsers = new JList<String>(new DefaultListModel<String>());
 		scrollPaneExistingUsers.setViewportView(lstExistingUsers);
 		
 		JPanel panelBottomBuffer = new JPanel();
@@ -534,10 +601,10 @@ public class ManageUsers extends JFrame {
 					.addComponent(panelBottomBuffer, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 		);
 		
-		JList<String> lstRoles = new JList<String>();
+		lstRoles = new JList<String>(new DefaultListModel<String>());
 		scrollPaneRoles.setViewportView(lstRoles);
 			
-		JList<String> lstSchemas = new JList<String>();
+		lstSchemas = new JList<String>(new DefaultListModel<String>());
 		scrollPaneSchemas.setViewportView(lstSchemas);
 		panelExistingUsers.setLayout(gl_panelExistingUsers);
 		getContentPane().setLayout(groupLayout);
