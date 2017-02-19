@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.GroupLayout;
@@ -23,11 +24,17 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.LayoutStyle.ComponentPlacement;
+
+import com.chaglei.organizer.jtable.TableModel;
+
+import pojos.Documents;
+
 import javax.swing.WindowConstants;
 
 import swingUtil.JTextFieldEnhanced;
 import transientPojos.DocTypes.DocType;
 import util.FrameUtil;
+import util.MongoDBUtils;
 
 public class DocumentOrganizer extends JFrame {
 
@@ -280,7 +287,7 @@ public class DocumentOrganizer extends JFrame {
 
 		scrollPaneForJTable.add(jTable.getTableHeader());
 		scrollPaneForJTable.setViewportView(jTable);
-		((TableModel)jTable.getModel()).addDataModelRow("doc name", new Date(), new Date(), "sample data", DocType.BILL_CAR, new BigDecimal(100.00), new Date());
+
 		
 		jpanelContainerForScrollPane.setLayout(gl_jpanelContainerForScrollPane);
 		jpanelBrowseDocuments.setLayout(gl_jpanelBrowseDocuments);
@@ -311,8 +318,13 @@ public class DocumentOrganizer extends JFrame {
 
 	}
 
-	public static void main(String[] args) {
-		new DocumentOrganizer();
+	public static void main(String[] args) 
+	{
+		LoginCredentials loginCredentials = new LoginCredentials();
+		DocumentOrganizer documentOrganizer = loginCredentials.doLogin();
+		
+		List<Documents> listOfDocuments = MongoDBUtils.getDocuments(loginCredentials.getMongoClient(), loginCredentials.getDBSchema());
+		((TableModel)documentOrganizer.jTable.getModel()).populateDataModel(listOfDocuments);
 	}
 
 }

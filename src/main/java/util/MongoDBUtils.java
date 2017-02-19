@@ -8,6 +8,10 @@ import java.util.Vector;
 import java.util.Map.Entry;
 
 import org.bson.Document;
+import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.Morphia;
+import org.mongodb.morphia.mapping.MapperOptions;
+import org.mongodb.morphia.query.Query;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
@@ -16,14 +20,11 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
+import pojos.Documents;
 import transientPojos.UserDBRoles;
 
 
 public class MongoDBUtils {
-	public static final String DBNAM_AUTH = "admin";
-	public static final String DOCUMENT_DESCRIPTION_STORE_NAME = "documents";
-	public static final String BINARY_DOCUMENTS_STORE_NAME = "binary_documents";
-
 	
 	public static MongoClient connectToMongoDB(String user, char[] password, String dbschema, String hostname, String port)
 	{
@@ -163,6 +164,32 @@ public class MongoDBUtils {
 		
 	}
 	
+	public static boolean setRolesForUser(final MongoClient mongoClient, final String strDatabaseWhereToUpdateUser, final String strUserName , final Set<String> setRoles)
+	{
+	    MongoDatabase mongoDatabase = mongoClient.getDatabase(strDatabaseWhereToUpdateUser);
+	    String str_json = JSONBuilder.buildUpdateUserRolesJSON(strUserName, setRoles); 
+	    final Document doc = Document.parse(str_json);
+	    Document documentOutput;
+	    try
+	    {
+	    	documentOutput = mongoDatabase.runCommand(doc);
+	    }
+	    catch(Exception anyExc)
+	    {
+	    	return false;
+	    }
+	    
+	    
+	    if(documentOutput.toString().indexOf("ok=1.0") > 0 && documentOutput.toString().length() < 30)
+	    {
+	    	return true;
+	    }
+	    else
+	    {
+	    	return false;
+	    }
+	}
+	
 	public static Vector<UserDBRoles> getRolesForAllUsers(final MongoClient MONGO_CLIENT, final String DATABASE_NAME)
 	{
 	    MongoDatabase mongoDatabase = MONGO_CLIENT.getDatabase(DATABASE_NAME);
@@ -186,13 +213,56 @@ public class MongoDBUtils {
 	}
 
 	
-	public static void createUser(final MongoClient mongoClient, final String database, final String userName, final String password, final Set<String> setRoles)
+	public static boolean createUser(final MongoClient mongoClient, final String database, final String userName, final String password, final Set<String> setRoles)
 	{
 		MongoDatabase mongoDatabase = mongoClient.getDatabase(database);
 		String strJSON = JSONBuilder.buildCreateUserJSON(userName, password, setRoles);
 		final Document doc = Document.parse(strJSON);
 		Document documentOutput = mongoDatabase.runCommand(doc);
-		System.out.println(documentOutput);
+	    if(documentOutput.toString().indexOf("ok=1.0") > 0 && documentOutput.toString().length() < 30)
+	    {
+	    	return true;
+	    }
+	    else
+	    {
+	    	return false;
+	    }
+	}
+	
+	public static boolean deleteUser(final MongoClient mongoClient, final String database, final String userName)
+	{
+		MongoDatabase mongoDatabase = mongoClient.getDatabase(database);
+		String strJSON = JSONBuilder.buildDropUserJSON(userName);
+		final Document doc = Document.parse(strJSON);
+		Document documentOutput = mongoDatabase.runCommand(doc);
+	    if(documentOutput.toString().indexOf("ok=1.0") > 0 && documentOutput.toString().length() < 30)
+	    {
+	    	return true;
+	    }
+	    else
+	    {
+	    	return false;
+	    }
+	}
+	
+	public static List<Documents> getDocuments(final MongoClient mongoClient, final String database)
+	{
+		final Morphia morphia = new Morphia();
+		MapperOptions options = new MapperOptions();
+		options.setStoreEmpties(true);
+		options.setStoreNulls(true);
+		morphia.getMapper().setOptions(options);
+		morphia.mapPackage("pojos");
+
+		final Datastore datastore = morphia.createDatastore(mongoClient, database);
+		datastore.ensureIndexes();
+
+		
+		final Query<Documents> query = datastore.createQuery(Documents.class);
+		List<Documents> listOfDocuments = query.asList();
+		
+		return listOfDocuments;
+
 	}
 	
 

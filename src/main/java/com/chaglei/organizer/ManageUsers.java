@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 
-import javax.swing.AbstractListModel;
 import javax.swing.DefaultListModel;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
@@ -19,10 +18,12 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 import javax.swing.event.ListSelectionEvent;
@@ -31,6 +32,7 @@ import javax.swing.event.ListSelectionListener;
 import com.mongodb.MongoClient;
 
 import transientPojos.UserDBRoles;
+import util.ArrayUtils;
 import util.FrameUtil;
 import util.MongoDBUtils;
 
@@ -55,12 +57,13 @@ public class ManageUsers extends JFrame {
 	JList<String> lstExistingUsers;
 	JList<String> lstSchemas;
 	JList<String> lstRoles;
+	UserDBRoles userDBRolesCurrentUser;
 	public ManageUsers(LoginCredentials loginCredentials) {
 		this.loginCredentials = loginCredentials;
 		buildGUI();
-		UserDBRoles userDBRoles = populateCurrentUserFields(panelExistingConnectionInformation);
+		userDBRolesCurrentUser = populateCurrentUserFields(panelExistingConnectionInformation);
 		populateNewUserFields();
-		populateExistingUsers(userDBRoles);
+		populateExistingUsers(userDBRolesCurrentUser);
 	}
 	
 	
@@ -74,6 +77,40 @@ public class ManageUsers extends JFrame {
 		FrameUtil.centerWindow(manageUsers);
 		manageUsers.setVisible(true);
 		
+	}
+
+	private void deleteUser()
+	{
+		String strSelectedUser = this.lstExistingUsers.getSelectedValue();
+		String strSelectedDB = this.lstSchemas.getSelectedValue();
+		boolean boolSuccess = MongoDBUtils.deleteUser(loginCredentials.getMongoClient(), strSelectedDB, strSelectedUser);
+		if(boolSuccess == true)
+		{
+			JOptionPane.showMessageDialog(null, "User: " + strSelectedUser + " has been DELETED ", "SUCCESS!", JOptionPane.INFORMATION_MESSAGE);
+			populateExistingUsers(userDBRolesCurrentUser);
+		}
+		else
+		{
+			JOptionPane.showMessageDialog(null, "FAILED to delete user: " + strSelectedUser, "FAILED!", JOptionPane.INFORMATION_MESSAGE);
+		}
+		
+	}
+	
+	private void updateRolesInDB()
+	{
+		Set<String> setRoles = getSelectedRoles();
+		String strSelectedUser = this.lstExistingUsers.getSelectedValue();
+		String strSelectedDB = this.lstSchemas.getSelectedValue();
+		boolean boolSuccess = MongoDBUtils.setRolesForUser(loginCredentials.getMongoClient(), strSelectedDB, strSelectedUser, setRoles);
+		if(boolSuccess == true)
+		{
+			JOptionPane.showMessageDialog(null, "User: " + strSelectedUser + " has been UPDATED ", "SUCCESS!", JOptionPane.INFORMATION_MESSAGE);
+			populateExistingUsers(userDBRolesCurrentUser);
+		}
+		else
+		{
+			JOptionPane.showMessageDialog(null, "FAILED to update user: " + strSelectedUser, "FAILED!", JOptionPane.INFORMATION_MESSAGE);
+		}
 	}
 	
 	protected void createNewUser()
@@ -133,6 +170,10 @@ public class ManageUsers extends JFrame {
 	
 	private void populateDBsWhenGivenAUser(UserDBRoles userDBRoles)
 	{
+		if(userDBRoles == null)
+		{
+			return;
+		}
 		Set<String> setUserDBs = userDBRoles.getDBs();
 		for(String strDB : setUserDBs)
 		{
@@ -158,12 +199,68 @@ public class ManageUsers extends JFrame {
 		{
 			return;
 		}
+
     	((DefaultListModel<String>)lstRoles.getModel()).clear();
+		/**
+		 * populate the roles list with all possible roles based on the checkboxes that are available when creating a user.
+		 */
+		Vector<JCheckBox> vectorOfCheckBoxes = new Vector<JCheckBox>(10);
+		for (Component component : panelExistingConnectionInformation.getComponents()) {
+		    if (component instanceof JCheckBox) { 
+		    	vectorOfCheckBoxes.add((JCheckBox)component);
+		    	((DefaultListModel<String>)lstRoles.getModel()).addElement(((JCheckBox)component).getText());
+		    }
+		}
+
 		for(String strRole : setUserRoles)
 		{
-			((DefaultListModel<String>)lstRoles.getModel()).addElement(strRole);
+			int intLocation= isRoleAlreadyInTheList(strRole); 
+			if(intLocation > -1)
+			{
+				int[] intArraySelectedItems = ArrayUtils.addItemToArray(lstRoles.getSelectedIndices(), isRoleAlreadyInTheList(strRole));
+				lstRoles.setSelectedIndices(intArraySelectedItems);
+			}
+			else
+			{
+				((DefaultListModel<String>)lstRoles.getModel()).addElement(strRole);
+			}
 		}
 	}
+	/**
+	 * Given a string go through the elements in the roles listbox and see if it's already there.
+	 * If it's there it returns the item's index if not returns -1
+	 * @param strRole
+	 * @return
+	 */
+	private int isRoleAlreadyInTheList(String strRole)
+	{
+		for(int i = 0; i < ((DefaultListModel<String>)lstRoles.getModel()).size(); i++)
+		{
+			if(((DefaultListModel<String>)lstRoles.getModel()).getElementAt(i).equalsIgnoreCase(strRole))
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+	/**
+	 * returns all the roles that are selected in the roles listbox
+	 * @return
+	 */
+	private Set<String> getSelectedRoles()
+	{
+		HashSet<String> hashSetRoles = new HashSet<String>();
+		for(int i = 0; i < ((DefaultListModel<String>)lstRoles.getModel()).size(); i++)
+		{
+			if(lstRoles.isSelectedIndex(i) == true)
+			{
+				hashSetRoles.add(lstRoles.getModel().getElementAt(i));
+			}
+		}
+
+		return hashSetRoles;
+	}
+	
 	protected void populateNewUserFields()
 	{
 		jComboBoxNewUserSchema.addItem(txtDataSchema.getText());
@@ -528,8 +625,18 @@ public class ManageUsers extends JFrame {
 		lblExistingUsers.setHorizontalAlignment(SwingConstants.CENTER);
 		
 		JButton btnUpdateUser = new JButton("Update User");
+		btnUpdateUser.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				updateRolesInDB();
+			}
+		});
 		
 		JButton btnDeleteUser = new JButton("Delete User");
+		btnDeleteUser.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				deleteUser();
+			}
+		});
 		
 		JScrollPane scrollPaneExistingUsers = new JScrollPane();
 		
@@ -602,6 +709,7 @@ public class ManageUsers extends JFrame {
 		);
 		
 		lstRoles = new JList<String>(new DefaultListModel<String>());
+		lstRoles.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION); 
 		scrollPaneRoles.setViewportView(lstRoles);
 			
 		lstSchemas = new JList<String>(new DefaultListModel<String>());

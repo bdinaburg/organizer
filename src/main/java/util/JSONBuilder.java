@@ -63,5 +63,26 @@ public class JSONBuilder {
 		    return strJSON;
 		}
 	}
+	
+	public static String buildUpdateUserRolesJSON(String strUserName, Set<String> roles)
+	{
+		String str = "{";
+		str += "updateUser: " + quote + strUserName + quote + coma;
+		String strRoles = buildRolesString(roles);
+		str += strRoles;
+		str += "}";
+		
+		return str;
+	}
+	
+	public static String buildDropUserJSON(String strUserName)
+	{
+		String str = "{";
+		str += "dropUser: " + quote + strUserName + quote;
+		str += "}";
+		
+		return str;
+	}
+
 
 }

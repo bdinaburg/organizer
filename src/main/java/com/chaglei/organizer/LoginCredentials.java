@@ -61,7 +61,7 @@ public class LoginCredentials extends JFrame {
 		}
 	}
 	
-	public void doLogin()
+	public DocumentOrganizer doLogin()
 	{
 		mongoClient = MongoDBUtils.connectToMongoDB(txtUserName.getText(), txtPassword.getPassword(), txtAuthSchema.getText(), txtHostname.getText(), txtPort.getText());
 		if(MongoDBUtils.checkConnection(mongoClient, this.getDBSchema(), COLLECTION_TO_COUNT) == true)
@@ -82,7 +82,7 @@ public class LoginCredentials extends JFrame {
 				mongoClient.close();
 			}
 		}
-
+		return (DocumentOrganizer)jFrameParentToClose;
 	}
 	
 	
