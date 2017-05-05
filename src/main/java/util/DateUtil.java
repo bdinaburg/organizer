@@ -15,21 +15,19 @@ public class DateUtil
 	 */
 	public static Date getDateObject(String date)
 	{
-		String month = date.substring(0,  date.indexOf("/"));
-		int month_index = date.indexOf("/", date.indexOf("/") + 1);
-		String day = date.substring(date.indexOf("/") + 1,  month_index);
-		String year = date.substring(month_index + 1, date.length());
-		if(year.length() == 2)
-		{
-			year = "19" + year;
-		}
-		
 		try {
+			String month = date.substring(0,  date.indexOf("/"));
+			int month_index = date.indexOf("/", date.indexOf("/") + 1);
+			String day = date.substring(date.indexOf("/") + 1,  month_index);
+			String year = date.substring(month_index + 1, date.length());
+			if(year.length() == 2)
+			{
+				year = "19" + year;
+			}
 			return getDateObject(month, day, year);
 		} catch (Exception e) {
-			e.printStackTrace();
+			return null;
 		} 
-		return null;
 	}
 	
 	public static Date getDateObject(Months month, String day, String fourDigitYear) throws Exception

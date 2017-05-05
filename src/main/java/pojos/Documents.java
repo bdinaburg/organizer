@@ -12,9 +12,13 @@ import org.mongodb.morphia.annotations.Field;
 import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Index;
 import org.mongodb.morphia.annotations.Indexes;
+import org.mongodb.morphia.annotations.PostLoad;
+import org.mongodb.morphia.annotations.PreLoad;
 import org.mongodb.morphia.annotations.PrePersist;
 import org.mongodb.morphia.annotations.Property;
 import org.mongodb.morphia.annotations.Reference;
+
+import com.mongodb.DBObject;
 
 @Entity("documents")
 @Indexes(
@@ -55,10 +59,26 @@ public class Documents
 	@Reference
 	private DocumentType documentType;
 	
-	@Reference
+	@Reference (lazy = true)
 	private List<ScannedFiles> scannedFiles = new LinkedList<ScannedFiles>();
 	
 	
+	public Documents(ObjectId objectId)
+	{
+		this.id = objectId;
+	}
+	
+	/**
+	 * if we don't specify this object Id it should get auto generated
+	 */
+	public Documents()
+	{
+	}
+	
+	public ObjectId getID()
+	{
+		return id;
+	}
 
 	public String getStrTextContent() {
 		return strName;
@@ -153,6 +173,19 @@ public class Documents
 		this.currency = currency_in.getCurrencyCode();
 	}
 	
+	/*@PreLoad void fixup(DBObject dbObject) {
+		//System.out.println(dbObject);
+		DBObject obj = (DBObject)dbObject.get("scannedFiles");
+		System.out.println(obj);
+	}
+	
+	@PostLoad void fixup2(DBObject dbObject) {
+		//System.out.println(dbObject);
+		DBObject obj = (DBObject)dbObject.get("scannedFiles");
+		System.out.println(obj);
+	}*/
+
+	
 	@PrePersist
 	private void Validation() throws Exception
 	{
@@ -173,5 +206,11 @@ public class Documents
 				throw new Exception("Did not specify when this is due");
 			}
 		}
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "id: " + id.toString() + " name: " + this.getStrName();
 	}
 }

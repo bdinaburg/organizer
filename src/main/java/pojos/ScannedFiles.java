@@ -34,11 +34,14 @@ public class ScannedFiles
 	@Id
 	private ObjectId id;
 	
-	@Property("document_in_byte_array")
-	private byte[] document_in_byte_array =  null;
-
+	@Property("filename")
+	private String strFileName = "";
+	
 	@Property("ischunked")
 	private boolean boolIsChunked = false;
+	
+	@Property("fileType")
+	private String strFileType = "pdf";
 	
 	@Property("chunk_number")
 	private int int_chunk_number = 0;
@@ -52,28 +55,46 @@ public class ScannedFiles
 	@Property("modified_date")
 	private Date modified_date;
 
+	@Property("document_in_byte_array")
+	private byte[] document_in_byte_array =  null;
+
+	@Property("documentsID")
+	private ObjectId documentsID;
+	
 	public ScannedFiles()
 	{
 		
 	}
 	
-	public ScannedFiles(byte[] document_byte_array, boolean ischunked, int chunk_number, String SHA256_of_all_chunks) throws Exception
+	public ScannedFiles(byte[] document_byte_array, int chunk_number, String SHA256_of_all_chunks) throws Exception
 	{
+		this(document_byte_array, chunk_number, SHA256_of_all_chunks, "pdf");
+	}
+	
+	/**
+	 * note: make sure the file has a valid file extension, the extension is used to determine what type of file it is. 
+	 * 
+	 * @param document_byte_array
+	 * @param chunk_number
+	 * @param SHA256_of_all_chunks
+	 * @param strFileType
+	 * @throws Exception
+	 */
+	public ScannedFiles(byte[] document_byte_array, int chunk_number, String SHA256_of_all_chunks, String strFileType) throws Exception
+	{
+		this.strFileType = strFileType;
+		boolean ischunked = false;
 		setDocument_inbytearray(document_byte_array);
+		String strInHash = SHA256.getSHA256Hash(document_byte_array);
+		if(strInHash.contentEquals((SHA256_of_all_chunks)) == false)
+		{
+			ischunked = true;
+		}
 		this.setBoolIsChunked(ischunked);
 		this.setInt_chunk_number(chunk_number);
 		this.setStrSHA256HashTotal(SHA256_of_all_chunks);
 	}
 
-	public ScannedFiles(byte[] document_byte_array, boolean ischunked, int chunk_number, String SHA256_of_all_chunks, String total_hashcode) throws Exception
-	{
-		setDocument_inbytearray(document_byte_array);
-		this.setBoolIsChunked(ischunked);
-		this.setInt_chunk_number(chunk_number);
-		this.setStrSHA256HashTotal(SHA256_of_all_chunks);
-		this.setStrSHA256HashTotal(total_hashcode);
-	}
-	
 	public byte[] getDocument_inbytearray() {
 		return document_in_byte_array;
 	}
@@ -91,7 +112,7 @@ public class ScannedFiles
 		return boolIsChunked;
 	}
 
-	public void setBoolIsChunked(boolean boolIsChunked) {
+	private void setBoolIsChunked(boolean boolIsChunked) {
 		this.boolIsChunked = boolIsChunked;
 	}
 
@@ -101,6 +122,10 @@ public class ScannedFiles
 
 	public void setInt_chunk_number(int int_chunk_number) {
 		this.int_chunk_number = int_chunk_number;
+	}
+	
+	public String getFileName() {
+		return this.strFileName;
 	}
 
 	public String getSHA256HashOfChunk() {
@@ -134,6 +159,20 @@ public class ScannedFiles
 		this.modified_date = modified_date;
 	}
 	
+	public String getFileType()
+	{
+		return strFileType;
+	}
+	
+	public void setDocumentsID(ObjectId documentsid) {
+		this.documentsID = documentsid;
+	}
+	
+	public ObjectId getDocumentsID()
+	{
+		return this.documentsID;
+	}
+	
 	@PrePersist
 	private void Validation() throws Exception
 	{
@@ -160,5 +199,12 @@ public class ScannedFiles
 		this.setModified_date(new Date());
 		
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "id: " + id.toString();
+	}
 
+	
 }

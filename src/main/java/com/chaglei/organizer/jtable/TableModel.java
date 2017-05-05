@@ -1,7 +1,5 @@
 package com.chaglei.organizer.jtable;
 
-import java.math.BigDecimal;
-import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 
@@ -9,7 +7,6 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableColumnModel;
 
 import pojos.Documents;
-import transientPojos.DocTypes.DocType;
 
 public class TableModel extends AbstractTableModel {
 
@@ -22,13 +19,14 @@ public class TableModel extends AbstractTableModel {
 	public final String DOC_TYPE =  "Doc Type";
 	public final String DOLLAR_AMOUNT = "Dollar Amount";
 	public final String DUE_DATE = "Due Date";
+	public final String PAID_DATE = "Paid Date";
 	public final String DOCUMENT_OBJECT = "DocumentObject";
 	
 	
 	private Vector<TableRow> vector;
 	TableColumnModel tableColumnModel;
 
-	private String[] columnNames = { DOC_NAME, CREATE_DATE, INSERTION_DATE, DESCRIPTION, DOC_TYPE, DOLLAR_AMOUNT, DUE_DATE, DOCUMENT_OBJECT};
+	private String[] columnNames = { DOC_NAME, CREATE_DATE, INSERTION_DATE, DESCRIPTION, DOC_TYPE, DOLLAR_AMOUNT, DUE_DATE, PAID_DATE, DOCUMENT_OBJECT};
 
 	public TableModel() {
 		vector = new Vector<TableRow>(25);
@@ -73,6 +71,12 @@ public class TableModel extends AbstractTableModel {
 				return "";
 			}
 			return vector.elementAt(rowIndex).getDocument().getDate_due_date().toString();
+		case PAID_DATE:
+			if(vector.elementAt(rowIndex).getDocument().getDate_paid_date() == null)
+			{
+				return "";
+			}
+			return vector.elementAt(rowIndex).getDocument().getDate_paid_date().toString();
 		case DOCUMENT_OBJECT:
 			return vector.elementAt(rowIndex).getDocument().toString();
 		}
@@ -88,6 +92,20 @@ public class TableModel extends AbstractTableModel {
 	public void addDataModelRow(Documents document) {
 		TableRow tableRow = new TableRow(document);
 		vector.addElement(tableRow);
+	}
+	
+	public Documents getDocumentAtRow(int intRow)
+	{
+		if(intRow >= 0 && vector != null && vector.size() > intRow)
+		{
+			TableRow tableRow = vector.elementAt(intRow);
+			return tableRow.getDocument();
+		}
+		return null;
+	}
+	
+	public void clearDataModel() {
+		vector.clear();
 	}
 	
 	public void populateDataModel(List<Documents> listOfDocuments) 

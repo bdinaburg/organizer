@@ -64,6 +64,9 @@ public class ManageUsers extends JFrame {
 		userDBRolesCurrentUser = populateCurrentUserFields(panelExistingConnectionInformation);
 		populateNewUserFields();
 		populateExistingUsers(userDBRolesCurrentUser);
+		FrameUtil.setSize(this, 1200, 800);
+		FrameUtil.centerWindow(this);
+		this.setVisible(true);
 	}
 	
 	
@@ -73,10 +76,6 @@ public class ManageUsers extends JFrame {
 		LoginCredentials loginCredentials = new LoginCredentials();
 		loginCredentials.doLogin();
 		ManageUsers manageUsers = new ManageUsers(loginCredentials);
-		FrameUtil.setSize(manageUsers, 1200, 800);
-		FrameUtil.centerWindow(manageUsers);
-		manageUsers.setVisible(true);
-		
 	}
 
 	private void deleteUser()

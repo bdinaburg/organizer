@@ -92,4 +92,10 @@ public class DocumentType {
 	public void setDocument_type(DocType docType) {
 		this.strDocument_type = docTypeToString(docType);
 	}
+	
+	@Override
+	public String toString()
+	{
+		return strDocument_type;
+	}
 }

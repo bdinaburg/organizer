@@ -18,15 +18,13 @@ public class SHA256 {
 	}
 	
 	public static String getSHA256Hash(byte[] data) {
-		String result = null;
 		try {
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
 			byte[] hash = digest.digest(data);
 			return bytesToHex(hash); 
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			return null;
 		}
-		return result;
 	}
 
 
