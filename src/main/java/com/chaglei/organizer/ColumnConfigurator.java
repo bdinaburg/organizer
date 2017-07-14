@@ -1,11 +1,15 @@
 package com.chaglei.organizer;
 
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Vector;
 
 import javax.swing.AbstractButton;
@@ -19,6 +23,7 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.jgoodies.forms.layout.FormSpecs;
 import com.jgoodies.forms.layout.RowSpec;
 
+import util.ConfigData;
 import util.FrameUtil;
 
 public class ColumnConfigurator extends JFrame 
@@ -38,7 +43,9 @@ public class ColumnConfigurator extends JFrame
 		this.setPreferredSize(dim);
 		this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		this.setTitle("Select Visible Columns");
-		FrameUtil.centerWindow(this);		
+		FrameUtil.centerWindow(this);
+		
+		hideShowColumnsBasedOnPropertiesFile(jTable);
 	}
 
 	public static void main (String... args)
@@ -211,7 +218,8 @@ public class ColumnConfigurator extends JFrame
 						}
 
 					}
-					System.out.println(selected);
+					//System.out.println(selected);
+					ConfigData.setColumns(jTableGlobalVar);
 					// abstractButton.setText(newLabel);
 				}
 			};
@@ -250,6 +258,88 @@ public class ColumnConfigurator extends JFrame
 			
 		}
 		return -1;
+	}
+	
+	public void hideShowColumnsBasedOnPropertiesFile(JTable jtable)
+	{
+		/**
+		 * all the checkboxes
+		 */
+		List<JCheckBox> listOfCheckBoxes = getAllJCheckBoxes(this);
+
+		/**
+		 * get all visible columns
+		 */
+		String strColumnsThatAreVisible = ConfigData.getColumns();
+		String[] strColumnsArray = strColumnsThatAreVisible.split(",");
+		Vector<String> vectorOfColumnsThatAreVisible = new Vector<String>(Arrays.asList(strColumnsArray));
+		
+		/**
+		 * get all the columns that exist (visible and the one's that *should* be invisible)
+		 */
+		Vector<String> vectorOfALLTableColumnNames = new Vector<String>(20);
+		for(int i = 0; i < jtable.getModel().getColumnCount(); i++)
+		{
+			vectorOfALLTableColumnNames.addElement(jtable.getModel().getColumnName(i));
+		}
+		
+		/**
+		 * now we need a list of the one's that should be removed. We do this by going through all the columns that are visible
+		 * and then comparing that list to the list of all the columns that exist. Then we keep removing columns from the list of all
+		 * columns until all that's left are the columns that should be invisible
+		 */
+		Vector<String> vectorOfColumnsThatShouldBeRemoved = new Vector<String>(vectorOfALLTableColumnNames);
+		for(String strColumn : vectorOfColumnsThatAreVisible)
+		{
+			for(String strColumnToRemove : vectorOfALLTableColumnNames)
+			{
+				if(strColumn.equalsIgnoreCase(strColumnToRemove) == true)
+				{
+					//vectorOfColumnTitles.remove(strTitle);
+					vectorOfColumnsThatShouldBeRemoved.remove(strColumnToRemove);
+				}
+			}
+		}
+		/**
+		 *		vectorOfColumnsThatShouldBeRemoved should now only contains the columns that should not be visible
+		 */
+		for(String strTitle : vectorOfColumnsThatShouldBeRemoved)
+		{
+			if(isColumnVisible(jTableGlobalVar, strTitle) == true)
+			{
+				int intColumnToRemove = findColumnInColumnModelByName(jTableGlobalVar, strTitle);
+				TableColumn tableColumnToRemove = jTableGlobalVar.getColumnModel().getColumn(intColumnToRemove);
+				hashMapRemovedColumns.put(strTitle, tableColumnToRemove);
+				jTableGlobalVar.removeColumn(tableColumnToRemove);
+				for(JCheckBox checkbox : listOfCheckBoxes)
+				{
+					if(checkbox.getText().equalsIgnoreCase(strTitle))
+					{
+						checkbox.setSelected(false);
+					}
+				}
+			}
+		}
+	}
+	
+	/**
+	 * because I am too lazy to store the checkboxes and keep track of them, this function
+	 * should find every checkbox
+	 * @param c
+	 * @return
+	 */
+	private List<JCheckBox> getAllJCheckBoxes(final Container c) {
+	    Component[] comps = c.getComponents();
+	    List<JCheckBox> compList = new ArrayList<JCheckBox>();
+	    for (Component comp : comps) {
+	        if(comp instanceof JCheckBox)
+	        {
+	        	compList.add((JCheckBox)comp);
+	        }
+	        if (comp instanceof Container)
+	            compList.addAll(getAllJCheckBoxes((Container) comp));
+	    }
+	    return compList;
 	}
 	
 }

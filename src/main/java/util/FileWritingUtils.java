@@ -9,8 +9,10 @@ import java.util.List;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import pojos.DocumentType;
 import pojos.Documents;
 import pojos.ScannedFiles;
+import transientPojos.DocTypes;
 
 public class FileWritingUtils {
 	
@@ -18,15 +20,16 @@ public class FileWritingUtils {
 	 * opens just the text and meta data portion of the Document, not the scanned files 
 	 * @param document
 	 */
-	public static void openDocument(Documents document)
+	public static void openDocument(Documents document, String strFileName)
 	{
     	String fileType = ".txt";
 	    Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	    String jsonStr = gson.toJson(document);
 	    
-    	String strFileName = FileReadingUtils.getCurrentPath();
-    	strFileName = strFileName + "/";
-    	strFileName = strFileName + document.getID().toString();
+/*    	String strFileName = FileReadingUtils.getCurrentPath();
+    	strFileName = strFileName + "/temp/";
+*/    	
+	    strFileName = strFileName + document.getID().toString();
     	strFileName = strFileName + fileType;
     	if(FileReadingUtils.doesFileExist(strFileName) == false)
     	{
@@ -67,7 +70,7 @@ public class FileWritingUtils {
 
 	}
 
-	public static void openScannedDocument(Documents document)
+	public static void openScannedDocument(Documents document, String strFileName)
 	{
     	Iterator<ScannedFiles> iter = document.getScannedFiles().iterator();
     	ScannedFiles scannedFile =  null;
@@ -75,13 +78,13 @@ public class FileWritingUtils {
     	{
     		scannedFile = iter.next();
     	}
-    	openScannedFile(scannedFile);
+    	openScannedFile(scannedFile, strFileName);
 	}
 	/**
 	 * in order to open a file it writes it out to the disk, and then opens it up with a default editor
 	 * @param scannedFile
 	 */
-	public static void openScannedFile(ScannedFiles scannedFile)
+	public static void openScannedFile(ScannedFiles scannedFile, String strFileName)
 	{
 
     	String fileType = scannedFile.getFileType();
@@ -89,8 +92,9 @@ public class FileWritingUtils {
     	{
     		fileType = ".pdf";
     	}
-    	String strFileName = FileReadingUtils.getCurrentPath();
+/*    	String strFileName = FileReadingUtils.getCurrentPath();
     	strFileName = strFileName + "/";
+*/
     	strFileName = strFileName + scannedFile.getSHA256HashTotal() + ".";
     	strFileName = strFileName + fileType;
     	if(FileReadingUtils.doesFileExist(strFileName) == false)
@@ -114,6 +118,32 @@ public class FileWritingUtils {
     	        // no application registered for PDFs
     	    }
     	}
+	}
+
+	public static void saveDocumentTypesToDisk(String strFolderToPlaceFiles, List<DocumentType> documentTypeList)
+	{
+		if(strFolderToPlaceFiles.endsWith("/") || strFolderToPlaceFiles.endsWith("\\"))
+		{
+			strFolderToPlaceFiles = strFolderToPlaceFiles.substring(0,  strFolderToPlaceFiles.length() - 1);
+		}
+
+		
+		for(DocumentType  documentType : documentTypeList  )
+		{
+			try
+			{
+		    	String fileType = ".json";
+
+				String strFileName =  strFolderToPlaceFiles;
+		    	strFileName = strFileName + "/";
+		    	strFileName = strFileName + documentType.getId().toString();
+		    	
+			}
+			catch(Exception anyExc)
+			{
+				System.out.println("File couldn't be written " + documentType.toString());
+			}
+		}
 	}
 	
 	public static void saveScannedFilesToDisk(String strFolderToPlaceFiles, List<ScannedFiles> listScannedFiles)

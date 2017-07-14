@@ -100,12 +100,15 @@ public class ScannedFiles
 	}
 	
 	public void setDocument_inbytearray(byte[] document_in_byte_array) throws Exception {
-		if(document_in_byte_array.length > MAX_FILE_SIZE)
+		if(document_in_byte_array != null && document_in_byte_array.length > MAX_FILE_SIZE)
 		{
 			throw new Exception("Attempted to set document that is bigger than 15MB");
 		}
 		this.document_in_byte_array = document_in_byte_array;
-		this.setStrSHA256HashOfChunk(SHA256.getSHA256Hash(document_in_byte_array));
+		if(document_in_byte_array != null)
+		{
+			this.setStrSHA256HashOfChunk(SHA256.getSHA256Hash(document_in_byte_array));
+		}
 	}
 	
 	public boolean isChunked() {

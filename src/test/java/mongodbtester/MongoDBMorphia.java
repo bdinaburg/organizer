@@ -70,11 +70,18 @@ public class MongoDBMorphia {
 			datastore.ensureIndexes();
 			
 			
-			ObjectId objectId = generateObjectId(1485753284, 8186184, 10072, 10742172);
+			ObjectId objectId = generateObjectId(1485753284, 8186184, 10072, 10742171);
 			System.out.println(objectId);
 			//insertSampleDocument(objectId, datastore);
 			 
 			Documents doc = datastore.get(Documents.class, objectId);
+			
+			Iterator<ScannedFiles> iter = doc.getScannedFiles().iterator();
+			while(iter.hasNext())
+			{
+				ScannedFiles scannedFile = iter.next();
+				scannedFile.setDocument_inbytearray(null);
+			}
 			
 		    Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		    String jsonStr = gson.toJson(doc);

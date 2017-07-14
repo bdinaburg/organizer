@@ -1,16 +1,12 @@
 package com.chaglei.organizer;
 
 import java.awt.BorderLayout;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.GroupLayout;
@@ -31,11 +27,12 @@ import javax.swing.WindowConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import com.chaglei.organizer.jtable.JTableEx;
 import com.chaglei.organizer.jtable.TableModel;
 
 import pojos.Documents;
-import pojos.ScannedFiles;
 import swingUtil.JTextFieldEnhanced;
+import util.ConfigData;
 import util.FileReadingUtils;
 import util.FileWritingUtils;
 import util.FrameUtil;
@@ -46,7 +43,7 @@ public class DocumentOrganizer extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private JTextFieldEnhanced jtextFieldSearch;
 	private JScrollPane scrollPaneForJTable;
-	private JTable jTable;
+	private JTableEx jTable;
 	private JButton jbtnSearch = new JButton("Search");
 	JTextArea txtAreaDescription;
 	public DocumentOrganizer() {
@@ -63,7 +60,7 @@ public class DocumentOrganizer extends JFrame {
 		jbtnSearch.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				((TableModel)jTable.getModel()).clearDataModel();
-				List<Documents> listOfDocuments = MongoDBUtils.getDocuments(LoginCredentials.getLoginCredentials().getMongoClient(), LoginCredentials.getLoginCredentials().getDBSchema());
+				List<Documents> listOfDocuments = MongoDBUtils.getDocuments(LoginCredentials.getLoginCredentials().getMongoClient(), LoginCredentials.getLoginCredentials().getDBSchema(), jtextFieldSearch.getText());
 				((TableModel)jTable.getModel()).populateDataModel(listOfDocuments);
 				((TableModel)jTable.getModel()).fireTableDataChanged();
 
@@ -142,21 +139,6 @@ public class DocumentOrganizer extends JFrame {
 		menuOrganizer.setMnemonic('o');
 		menuBar.add(menuOrganizer);
 		
-		JMenuItem menuItemUserLogin = new JMenuItem("User Login");
-		menuItemUserLogin.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				LoginCredentials.getLoginCredentials().setVisible(true);
-			}
-		});
-		menuOrganizer.add(menuItemUserLogin);
-		
-		JMenuItem menuItemUserManagement = new JMenuItem("Manage Users");
-		menuItemUserManagement.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				new ManageUsers(LoginCredentials.getLoginCredentials());
-			}
-		});
-		
 		JMenuItem menuItemAddDocument = new JMenuItem("Add Document");
 		menuItemAddDocument.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -164,9 +146,16 @@ public class DocumentOrganizer extends JFrame {
 			}
 		});
 		
+		JMenuItem menuItemUserLogin = new JMenuItem("User Login");
+		menuOrganizer.add(menuItemUserLogin);
+		menuItemUserLogin.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				LoginCredentials.getLoginCredentials().setVisible(true);
+			}
+		});
+		
 		
 		menuOrganizer.add(menuItemAddDocument);
-		menuOrganizer.add(menuItemUserManagement);
 		
 		JMenuItem menuItemHideShowColumns = new JMenuItem("Hide / Show Columns");
 		
@@ -177,17 +166,40 @@ public class DocumentOrganizer extends JFrame {
 		});
 		menuOrganizer.add(menuItemHideShowColumns);
 		
+		JMenu menuDatabase = new JMenu("Database");
+		menuBar.add(menuDatabase);
+		
+		JMenuItem menuItemUserManagement = new JMenuItem("Manage Users");
+		menuDatabase.add(menuItemUserManagement);
+		menuItemUserManagement.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				new ManageUsers(LoginCredentials.getLoginCredentials());
+			}
+		});
+		
+		JMenuItem menuItemDatabaseIntegrity = new JMenuItem("Database Integrity Check");
+		menuDatabase.add(menuItemDatabaseIntegrity);
+		menuItemDatabaseIntegrity.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				new DatabaseDiagnostics(LoginCredentials.getLoginCredentials().getMongoClient(), LoginCredentials.getLoginCredentials().getDBSchema());
+			}
+		});
+		
 		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		this.setSize(1920/2, 1080/2);
 		this.setPreferredSize(new Dimension(1920/2, 1080/2));
 		FrameUtil.centerWindow(this);
+		
+		ColumnConfigurator temp = new ColumnConfigurator(jTable);
+		temp.setVisible(false);
+		temp = null;
 		this.setVisible(true);
 
 	}
 	
 	private void configureJTable()
 	{
-		jTable = new JTable();
+		jTable = new JTableEx();
 		jTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		jTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
 	        public void valueChanged(ListSelectionEvent event) {
@@ -223,7 +235,10 @@ public class DocumentOrganizer extends JFrame {
 		        int row = table.rowAtPoint(p);
 		        if (me.getClickCount() == 2) {
 		        	Documents document = ((TableModel)jTable.getModel()).getDocumentAtRow(row);
-		        	FileWritingUtils.openScannedDocument(document);
+		        	String strFileName = FileReadingUtils.getCurrentPath();
+		        	strFileName = strFileName + "/" + ConfigData.getTempFolder() + "/";
+		        	
+		        	FileWritingUtils.openScannedDocument(document, strFileName);
 		        }
 		    }
 		});

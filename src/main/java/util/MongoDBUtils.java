@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.regex.Pattern;
 
 import javax.swing.JOptionPane;
 
@@ -316,6 +317,40 @@ public class MongoDBUtils {
 	
 	}
 	
+	public static void deleteDocuments(final MongoClient mongoClient, final String database, Vector<Documents> documents)
+	{
+		Morphia localMorphia = getMorphia();
+		final Datastore datastore = localMorphia.createDatastore(mongoClient, database);
+		datastore.ensureIndexes();
+		if(documents == null)
+		{
+			return;
+		}
+		for(Documents document : documents)
+		{
+			try
+			{
+				datastore.delete(document);				
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public static <T> List<T> getItems(final Class<T> theClass, final MongoClient mongoClient, final String database)
+	{
+		Morphia localMorphia = getMorphia();
+		final Datastore datastore = localMorphia.createDatastore(mongoClient, database);
+		datastore.ensureIndexes();
+
+		final Query<T> query = datastore.createQuery(theClass);
+		List<T> listOfDocuments = query.asList();
+		
+		return listOfDocuments;
+	}
+	
 	public static List<Documents> getDocuments(final MongoClient mongoClient, final String database)
 	{
 		Morphia localMorphia = getMorphia();
@@ -327,6 +362,27 @@ public class MongoDBUtils {
 		
 		return listOfDocuments;
 	}
+	
+	public static List<Documents> getDocuments(final MongoClient mongoClient, final String database, String strFilter)
+	{
+		Morphia localMorphia = getMorphia();
+		final Datastore datastore = localMorphia.createDatastore(mongoClient, database);
+		datastore.ensureIndexes();
+		Query<Documents> query = null;
+		Pattern regexp = Pattern.compile(strFilter, Pattern.CASE_INSENSITIVE);
+		if(strFilter.length() < 1)
+		{
+			query = datastore.createQuery(Documents.class);
+		}
+		else
+		{
+			query = datastore.createQuery(Documents.class).filter("document_description", regexp);
+		}
+		List<Documents> listOfDocuments = query.asList();
+		
+		return listOfDocuments;
+	}
+	
 	
 	public static List<DocumentType> getDocTypes(final MongoClient mongoClient, final String database)
 	{
@@ -390,6 +446,97 @@ public class MongoDBUtils {
 		}
 		return document;
 	}
+	
+	/**
+	 * saves a document object, used during restore
+	 * 
+	 * @param txtName
+	 * @param strInsertDate
+	 * @param strDueDate
+	 * @param strAmount
+	 * @param strPaidDate
+	 * @param strCurrency
+	 * @param strDescription
+	 * @param documentType
+	 * @return
+	 */
+	public static Documents saveDocument(	String txtName, Documents document, DocumentType documentType,  
+										MongoClient mongoClient, String database)
+	{
+		Morphia localMorphia = getMorphia();
+		final Datastore datastore = localMorphia.createDatastore(mongoClient, database);
+		datastore.ensureIndexes();
+		document.setScannedFiles(null);
+		/**
+		 * TODO: make this work when we need to break the file apart if it is too big
+		 */
+		ScannedFiles scannedFile = saveScannedFile(txtName, datastore);
+		
+		if(scannedFile == null)
+		{
+			return null;
+		}
+		document.addScannedFile(scannedFile);
+		datastore.save(document);
+		
+		List<ScannedFiles> scannedFilesList = document.getScannedFiles();
+		for(ScannedFiles scannedFile1 : scannedFilesList)
+		{
+			scannedFile1.setDocumentsID(document.getID());
+			datastore.save(scannedFile1);
+		}
+		return document;
+	}
+	
+	/**
+	 * This is meant to be used when using database restore.
+	 * 
+	 * @param txtName
+	 * @param strInsertDate
+	 * @param strDueDate
+	 * @param strAmount
+	 * @param strPaidDate
+	 * @param strCurrency
+	 * @param strDescription
+	 * @param documentType
+	 * @return
+	 */
+	public static Documents saveDocument(	Documents document, List<ScannedFiles> listScannedFiles, DocumentType documentType,  
+										MongoClient mongoClient, String database)
+	{
+		Morphia localMorphia = getMorphia();
+		final Datastore datastore = localMorphia.createDatastore(mongoClient, database);
+		
+		ObjectId objectId = document.getID();
+		Documents documentIsDuplicate =  datastore.get(Documents.class, objectId);
+		if(documentIsDuplicate != null)
+		{
+			return null;
+		}
+
+		
+		datastore.ensureIndexes();
+		if(listScannedFiles == null)
+		{
+			return null;
+		}
+		/**
+		 * destroy what is there now, as it is unreliable. Recreate the items in the database and link to 
+		 * that instead.
+		 */
+		document.setScannedFiles(null);
+		for(ScannedFiles scannedFile : listScannedFiles)
+		{
+			ScannedFiles scannedFileAfterSave = saveScannedFile(scannedFile, datastore);
+			document.addScannedFile(scannedFileAfterSave);			
+		}
+
+		document.setDocumentType(documentType);
+		datastore.save(document);
+		
+		return document;
+	}
+
 
 	/**
 	 * returns all documents that don't have scanned files. 
@@ -625,6 +772,89 @@ public class MongoDBUtils {
 		}
 	}
 	
+	public static boolean saveDocumentType(List<DocumentType> listDocumentType, MongoClient mongoClient, String database) {
+		Morphia localMorphia = getMorphia();
+		final Datastore datastore = localMorphia.createDatastore(mongoClient, database);
+		datastore.ensureIndexes();
+		if (listDocumentType == null) {
+			return false;
+		}
+		for (DocumentType docType : listDocumentType) {
+			saveDocumentType(docType, datastore);
+		}
+		return true;
+	}
+	
+	/**
+	 * meant to use used as part of database restore
+	 * @param scannedFile
+	 * @param datastore
+	 * @return
+	 */
+	private static DocumentType saveDocumentType(DocumentType docType, final Datastore datastore)
+	{
+
+		DocumentType documentTypeInDB = datastore.get(DocumentType.class, docType.getId());
+		
+		if(documentTypeInDB != null)
+		{
+			return documentTypeInDB;
+		}
+
+		try
+		{
+			datastore.save(docType);
+			return docType;
+		}
+		catch(Exception anyExc)
+		{
+			return null;
+		}
+	}
+	
+	private static ScannedFiles saveScannedFile(ScannedFiles scannedFile, final Datastore datastore)
+	{
+
+		byte[] byteArrayPdfFile = scannedFile.getDocument_inbytearray();
+
+		if(byteArrayPdfFile == null)
+		{
+			return null;
+		}
+		ScannedFiles scannedFileFromDB = datastore.get(ScannedFiles.class, scannedFile.getId());
+		String strHashCode = SHA256.getSHA256Hash(byteArrayPdfFile);
+		if(scannedFileFromDB != null)
+		{
+			if(scannedFileFromDB.getSHA256HashTotal() == strHashCode)
+			{
+				return scannedFileFromDB;
+			}
+			else
+			{
+				System.out.println("Scanned File with the ID: " + scannedFile.getId() + " exists in the database, but it's hash code is different than the file that was being uploaded.");
+			}
+		}
+
+		List<ScannedFiles> listScannedFiles = datastore.createQuery(ScannedFiles.class)
+                .field("total_hashcode").equal(strHashCode)
+                .asList();
+		
+		//It is a bad thing if we already fine a file, that means the file has already been scanned in
+		if(listScannedFiles.isEmpty() == false)
+		{
+			return null;
+		}
+
+		try
+		{
+			datastore.save(scannedFile);
+			return scannedFile;
+		}
+		catch(Exception anyExc)
+		{
+			return null;
+		}
+	}
 
 	private static Morphia getMorphia()
 	{

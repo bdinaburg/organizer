@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
@@ -54,22 +55,22 @@ import javax.swing.ButtonGroup;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JTextField;
 
-public class DatabaseDiagnostics extends JFrame {
+public class DatabaseBackup extends JFrame {
 	private static final long serialVersionUID = 1L;
 	protected String strDBSchema = null;
 	MongoClient mongoClient = null;
-	JList<Object> jlistScannedFilesWithoutDocuments = new JList<Object>();
+	JList<Object> jlistScannedFiles = new JList<Object>();
 	List<ScannedFiles> listScannedFilesWithoutDocuments;
-	JList<Object> jlistDocumentsWithoutScannedFiles = new JList<Object>();
+	JList<Object> jlistDocuments = new JList<Object>();
 	List<Documents> listDocumentsWithoutScannedFiles;
-	JList<Object> jlistBrokenDocumentsReference = new JList<Object>();
-	List<Documents> listBrokenDocumentsReference;
+	JList<Object> jlistDocTypes = new JList<Object>();
+	List<DocumentType> listBrokenDocumentsReference;
 	private JTextField txtSchema;
-	private JTextFieldEnhanced txtSaveLocationScans;
-	private JTextFieldEnhanced txtSaveLocationDocs;
-	DatabaseDiagnostics thiz = this;
+	private JTextFieldEnhanced txtSaveLocation;
+	private JTextFieldEnhanced txtTempLocationSave;
+	DatabaseBackup thiz = this;
 	
-	public DatabaseDiagnostics(MongoClient mongoClient, String schema) {
+	public DatabaseBackup(MongoClient mongoClient, String schema) {
 		this.strDBSchema = schema;
 		this.mongoClient = mongoClient;
 		buildGUI();
@@ -86,7 +87,7 @@ public class DatabaseDiagnostics extends JFrame {
 	@SuppressWarnings("unchecked")
 	private void buildGUI()
 	{
-		setTitle("Schema Integrity Check");
+		setTitle("Backup Database Schema to Disk");
 		getContentPane().setLayout(new GridLayout(0, 1, 0, 0));
 		
 		JPanel panelMainPanel = new JPanel();
@@ -96,104 +97,46 @@ public class DatabaseDiagnostics extends JFrame {
 		
 		JLabel lblDatabase = new JLabel("Data Schema:");
 		
-		JButton btnCheckSchema = new JButton("Query Everything Above this Button");
-		btnCheckSchema.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				listScannedFilesWithoutDocuments = MongoDBUtils.findScannedFilesWithoutADocument(mongoClient, strDBSchema);
-				jlistScannedFilesWithoutDocuments.setListData(listScannedFilesWithoutDocuments.toArray());
-			}
-		});
-		
-		JButton btnDeleteScannedFiles = new JButton("Delete Scans");
+		JButton btnDeleteScannedFiles = new JButton("Query Scans");
 		btnDeleteScannedFiles.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				//txtSaveLocationDocs
-				int intCount = jlistScannedFilesWithoutDocuments.getModel().getSize();
-				if(intCount == 0)
-				{
-					JOptionPane.showMessageDialog(thiz, "Nothing to delete, try quering scanned files first");
-					return;
-				}
-				
-				List<ScannedFiles> vectorScansToDelete = new Vector<ScannedFiles>(20);
-				for(int i = 0; i < intCount; i++)
-				{
-					Object obj = jlistScannedFilesWithoutDocuments.getModel().getElementAt(i);	
-					if(obj instanceof ScannedFiles)
-					{
-						ScannedFiles scannedFile = (ScannedFiles)obj;
-						vectorScansToDelete.add(scannedFile);
-					}
-				}
-				
-				MongoDBUtils.deleteScannedFiles(mongoClient, strDBSchema, vectorScansToDelete);
-	    		JOptionPane.showMessageDialog(thiz, "Deleted " + intCount + " scanned files.");
-
-
+				listScannedFilesWithoutDocuments = MongoDBUtils.getItems(ScannedFiles.class, mongoClient, strDBSchema);
+				jlistScannedFiles.setListData(listScannedFilesWithoutDocuments.toArray());
 			}
 		});
 		
 		JScrollPane scrollPaneScannedFiles = new JScrollPane();
 		
-		JLabel lblBrokenLinks = new JLabel("Scanned Files that have a Document but don't have a reference to their Document");
+		JLabel lblBrokenLinks = new JLabel("Document Types");
 		
 		JScrollPane scrollPaneScannedFilesNoLinkBack = new JScrollPane();
 		
-		scrollPaneScannedFilesNoLinkBack.setViewportView(jlistBrokenDocumentsReference);
-		jlistBrokenDocumentsReference.setCellRenderer(new MissingReferenceRenderer());
+		scrollPaneScannedFilesNoLinkBack.setViewportView(jlistDocTypes);
+		//jlistBrokenDocumentsReference.setCellRenderer(new MissingReferenceRenderer());
 		
 		
-		scrollPaneScannedFiles.setViewportView(jlistScannedFilesWithoutDocuments);
+		scrollPaneScannedFiles.setViewportView(jlistScannedFiles);
 		
-		scrollPaneDocument.setViewportView(jlistDocumentsWithoutScannedFiles);
+		scrollPaneDocument.setViewportView(jlistDocuments);
 		
-		JLabel lblDocuments = new JLabel("Documents without Scanned Files");
+		JLabel lblDocuments = new JLabel("Documents");
 		
-		JLabel lblScannedFiles = new JLabel("Scanned files that don't have a Document");
+		JLabel lblScannedFiles = new JLabel("Scanned Files");
 		
-		JButton btnDeleteDocuments = new JButton("Delete Docs");
-		btnDeleteDocuments.addActionListener(new ActionListener() {
+		JButton btnQueryDocuments = new JButton("Query Docs");
+		btnQueryDocuments.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				//txtSaveLocationDocs
-				int intCount = jlistDocumentsWithoutScannedFiles.getModel().getSize();
-				if(intCount == 0)
-				{
-					JOptionPane.showMessageDialog(thiz, "Nothing to save, try quering documents first");
-					return;
-				}
-				
-				Vector<Documents> vectorDocumentsToDelete = new Vector<Documents>(20);
-				for(int i = 0; i < intCount; i++)
-				{
-					Object obj = jlistDocumentsWithoutScannedFiles.getModel().getElementAt(i);	
-					if(obj instanceof Documents)
-					{
-						Documents document = (Documents)obj;
-						vectorDocumentsToDelete.add(document);
-					}
-				}
-				
-				MongoDBUtils.deleteDocuments(mongoClient, strDBSchema, vectorDocumentsToDelete);
-	    		JOptionPane.showMessageDialog(thiz, "Deleted " + intCount + " documents.");
+				listDocumentsWithoutScannedFiles = MongoDBUtils.getDocuments(mongoClient, strDBSchema);
+				jlistDocuments.setListData(listDocumentsWithoutScannedFiles.toArray());
+			}
+		});
+		
+		JButton btnQueryDocTypes = new JButton("Query Types");
+		btnQueryDocTypes.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				listBrokenDocumentsReference = MongoDBUtils.getDocTypes(mongoClient, strDBSchema);
+				jlistDocTypes.setListData(listBrokenDocumentsReference.toArray());
 
-			}
-		});
-		
-		JButton btnVerifyBrokenReferenceAndMissingScannedFiles = new JButton("Query Everything Above this Button");
-		btnVerifyBrokenReferenceAndMissingScannedFiles.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				listBrokenDocumentsReference = MongoDBUtils.findDocumentsWithScannedFilesWithoutDocumentReference(mongoClient, strDBSchema);
-				jlistBrokenDocumentsReference.setListData(listBrokenDocumentsReference.toArray());
-				
-				listDocumentsWithoutScannedFiles = MongoDBUtils.findDocumentsWithoutScannedFiles(mongoClient, strDBSchema);
-				jlistDocumentsWithoutScannedFiles.setListData(listDocumentsWithoutScannedFiles.toArray());
-			}
-		});
-		
-		JButton buttonFixScannedFilesReferences = new JButton("Add References");
-		buttonFixScannedFilesReferences.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				MongoDBUtils.fixDocumentsWithScannedFilesWithoutDocumentReference(mongoClient, strDBSchema);
 			}
 		});
 		
@@ -207,8 +150,8 @@ public class DatabaseDiagnostics extends JFrame {
 		btnSaveDocumentsToDisk.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				//txtSaveLocationDocs
-				int intCount = jlistDocumentsWithoutScannedFiles.getModel().getSize();
-				String saveLocation = txtSaveLocationDocs.getText(); 
+				int intCount = jlistDocuments.getModel().getSize();
+				String saveLocation = txtSaveLocation.getText(); 
 				if(intCount == 0)
 				{
 					JOptionPane.showMessageDialog(thiz, "Nothing to save, try quering documents first");
@@ -223,7 +166,7 @@ public class DatabaseDiagnostics extends JFrame {
 				File fileSaveLocation = new File(saveLocation);
 				if(fileSaveLocation.exists() == false || fileSaveLocation.isDirectory() == false)
 				{
-					if(fileSaveLocation.mkdir() ==  false)
+					if(fileSaveLocation.mkdirs() ==  false)
 					{
 						JOptionPane.showMessageDialog(thiz, "Invalid save location.");
 						return;
@@ -241,13 +184,26 @@ public class DatabaseDiagnostics extends JFrame {
 
 				for(int i = 0; i < intCount; i++)
 				{
-					Object obj = jlistDocumentsWithoutScannedFiles.getModel().getElementAt(i);	
+					Object obj = jlistDocuments.getModel().getElementAt(i);	
 					if(obj instanceof Documents)
 					{
 						Documents document = (Documents)obj;
-				    	String strFileName = saveLocation + "/";
-				    	strFileName = strFileName + document.getID().toString() + "." + document.getStrName().toString() + ".txt";
+				    	String strFileName = saveLocation + "/documents/";
+				    	String strDocName = document.getStrName().toString().replace("\\", ".");
+				    	strDocName = strDocName.replace(":", ".");
+				    	strDocName = strDocName.replace("/", ".");
+				    	strFileName = strFileName + document.getID().toString() + "." + strDocName + ".txt";
 					    Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+						Iterator<ScannedFiles> iter = document.getScannedFiles().iterator();
+						while(iter.hasNext())
+						{
+							ScannedFiles scannedFile = iter.next();
+							try {
+								scannedFile.setDocument_inbytearray(null);
+							} catch (Exception e1) {
+								e1.printStackTrace();
+							}
+						}
 					    String jsonStr = gson.toJson(document);
 				    	if(FileReadingUtils.doesFileExist(strFileName) == false)
 				    	{
@@ -278,8 +234,9 @@ public class DatabaseDiagnostics extends JFrame {
 		btnSaveScannedFilesToDisk.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				//txtSaveLocationDocs
-				int intCount = jlistScannedFilesWithoutDocuments.getModel().getSize();
-				String saveLocation = txtSaveLocationScans.getText(); 
+				int intCount = jlistScannedFiles.getModel().getSize();
+				String saveLocation = txtSaveLocation.getText(); 
+				saveLocation = saveLocation + "/scannedFiles/";
 				if(intCount == 0)
 				{
 					JOptionPane.showMessageDialog(thiz, "Nothing to save, try quering scanned files first");
@@ -313,7 +270,7 @@ public class DatabaseDiagnostics extends JFrame {
 				List<ScannedFiles> scannedFilesVector = new Vector<ScannedFiles>(20);
 				for(int i = 0; i < intCount; i++)
 				{
-					Object obj = jlistScannedFilesWithoutDocuments.getModel().getElementAt(i);	
+					Object obj = jlistScannedFiles.getModel().getElementAt(i);	
 					if(obj instanceof ScannedFiles)
 					{
 						ScannedFiles scannedFile = (ScannedFiles)obj;
@@ -344,7 +301,7 @@ public class DatabaseDiagnostics extends JFrame {
 		JButton btnViewScan = new JButton("View Scan");
 		btnViewScan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				List<Object> selectedDocuments = jlistScannedFilesWithoutDocuments.getSelectedValuesList();
+				List<Object> selectedDocuments = jlistScannedFiles.getSelectedValuesList();
 				if(selectedDocuments == null || selectedDocuments.size() == 0)
 				{
 					return;
@@ -354,9 +311,11 @@ public class DatabaseDiagnostics extends JFrame {
 				if(obj instanceof ScannedFiles)
 				{
 					String strFileName = FileReadingUtils.getCurrentPath();
-			    	strFileName = strFileName + "/" + ConfigData.getTempFolder() + "/";
-
-					FileWritingUtils.openScannedFile((ScannedFiles)obj, strFileName);
+			    	strFileName = strFileName + "/";
+			    	
+			    	
+					FileWritingUtils.openScannedFile((ScannedFiles)obj, txtTempLocationSave.getText() + "\\");
+					
 				}
 			}
 		});
@@ -364,7 +323,7 @@ public class DatabaseDiagnostics extends JFrame {
 		JButton btnViewDocument = new JButton("View Doc");
 		btnViewDocument.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				List<Object> selectedDocuments = jlistDocumentsWithoutScannedFiles.getSelectedValuesList();
+				List<Object> selectedDocuments = jlistDocuments.getSelectedValuesList();
 				if(selectedDocuments == null || selectedDocuments.size() == 0)
 				{
 					return;
@@ -373,44 +332,105 @@ public class DatabaseDiagnostics extends JFrame {
 				Object obj = selectedDocuments.get(0);
 				if(obj instanceof Documents)
 				{
-					String strFileName = FileReadingUtils.getCurrentPath();
-			    	strFileName = strFileName + "/" + ConfigData.getTempFolder() + "/";
-
-					FileWritingUtils.openDocument((Documents)obj, strFileName);
+					Documents document = (Documents)obj;
+					Iterator<ScannedFiles> iter = document.getScannedFiles().iterator();
+					while(iter.hasNext())
+					{
+						ScannedFiles scannedFile = iter.next();
+						try {
+							scannedFile.setDocument_inbytearray(null);
+						} catch (Exception e1) {
+							e1.printStackTrace();
+						}
+					}
+					FileWritingUtils.openDocument(document, txtTempLocationSave.getText() + "\\");
 				}
 
 			}
 		});
 		
-		JButton btnViewScanNoReference = new JButton("View Scan");
-		btnViewScanNoReference.addActionListener(new ActionListener() {
+		JButton btnSaveDocTypes = new JButton("Save to Disk");
+		btnSaveDocTypes.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				List<Object> selectedDocuments = jlistBrokenDocumentsReference.getSelectedValuesList();
-				if(selectedDocuments == null || selectedDocuments.size() == 0)
+				//txtSaveLocationDocs
+				int intCount = jlistDocTypes.getModel().getSize();
+				String saveLocation = txtSaveLocation.getText();
+				saveLocation = saveLocation + "/docTypes/";   
+				if(intCount == 0)
 				{
+					JOptionPane.showMessageDialog(thiz, "Nothing to save, try quering documents first");
 					return;
 				}
 				
-				Object obj = selectedDocuments.get(0);
-				if(obj instanceof Documents)
+				if(saveLocation.length() < 2)
 				{
-					String strFileName = FileReadingUtils.getCurrentPath();
-			    	strFileName = strFileName + ConfigData.getTempFolder();
-
-					FileWritingUtils.openScannedDocument((Documents)obj, strFileName);
+					JOptionPane.showMessageDialog(thiz, "Invalid save location.");
+					return;
 				}
+				File fileSaveLocation = new File(saveLocation);
+				if(fileSaveLocation.exists() == false || fileSaveLocation.isDirectory() == false)
+				{
+					if(fileSaveLocation.mkdirs() ==  false)
+					{
+						JOptionPane.showMessageDialog(thiz, "Invalid save location.");
+						return;
+					}
+				}
+				
+				try 
+				{
+					saveLocation = fileSaveLocation.getCanonicalPath();
+				} catch (IOException e1) 
+				{
+					JOptionPane.showMessageDialog(thiz, "Invalid save location.");
+					return;
+				}
+
+				for(int i = 0; i < intCount; i++)
+				{
+					Object obj = jlistDocTypes.getModel().getElementAt(i);	
+					if(obj instanceof DocumentType)
+					{
+						DocumentType documentType = (DocumentType)obj;
+				    	String strFileName = saveLocation + "/";
+				    	String strDocName = documentType.getStrDocument_type().toString();
+				    	strFileName = strFileName + documentType.getId().toString() + "." + strDocName + ".txt";
+					    Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+					    String jsonStr = gson.toJson(documentType);
+				    	if(FileReadingUtils.doesFileExist(strFileName) == false)
+				    	{
+				        	FileReadingUtils.writeTextFile(strFileName, jsonStr);
+				    	}
+					}
+
+				}
+				
+				
+		    	if (Desktop.isDesktopSupported()) 
+		    	{
+		    	        
+		   	        	try {
+							Desktop.getDesktop().open(fileSaveLocation);
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
+		    	}
+		    	else
+		    	{
+		    		JOptionPane.showMessageDialog(thiz, "Saved " + intCount + " documents.");
+		    	}
 			}
 		});
 		
-		txtSaveLocationScans = new JTextFieldEnhanced();
-		txtSaveLocationScans.setColumns(10);
+		txtSaveLocation = new JTextFieldEnhanced();
+		txtSaveLocation.setColumns(10);
 		
-		JLabel lblSaveLocationScans = new JLabel("Save Scans In:");
+		JLabel lblBackupFolder = new JLabel("Backup Folder:");
 		
-		txtSaveLocationDocs = new JTextFieldEnhanced();
-		txtSaveLocationDocs.setColumns(10);
+		txtTempLocationSave = new JTextFieldEnhanced();
+		txtTempLocationSave.setColumns(10);
 		
-		JLabel lblSaveLocationdocs = new JLabel("Save Docs In:");
+		JLabel lblTempFolder = new JLabel("Temp Folder:");
 		GroupLayout gl_panelMainPanel = new GroupLayout(panelMainPanel);
 		gl_panelMainPanel.setHorizontalGroup(
 			gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
@@ -435,7 +455,7 @@ public class DatabaseDiagnostics extends JFrame {
 								.addComponent(scrollPaneDocument, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 491, Short.MAX_VALUE)))
 						.addGroup(gl_panelMainPanel.createSequentialGroup()
 							.addContainerGap()
-							.addComponent(btnDeleteDocuments, GroupLayout.PREFERRED_SIZE, 131, GroupLayout.PREFERRED_SIZE)
+							.addComponent(btnQueryDocuments, GroupLayout.PREFERRED_SIZE, 131, GroupLayout.PREFERRED_SIZE)
 							.addPreferredGap(ComponentPlacement.RELATED)
 							.addComponent(btnSaveDocumentsToDisk, GroupLayout.PREFERRED_SIZE, 128, GroupLayout.PREFERRED_SIZE)
 							.addPreferredGap(ComponentPlacement.RELATED)
@@ -443,13 +463,9 @@ public class DatabaseDiagnostics extends JFrame {
 							.addGap(92))
 						.addGroup(gl_panelMainPanel.createSequentialGroup()
 							.addContainerGap()
-							.addComponent(btnVerifyBrokenReferenceAndMissingScannedFiles, GroupLayout.DEFAULT_SIZE, 491, Short.MAX_VALUE)
-							.addPreferredGap(ComponentPlacement.RELATED))
-						.addGroup(gl_panelMainPanel.createSequentialGroup()
-							.addContainerGap()
-							.addComponent(buttonFixScannedFilesReferences, GroupLayout.PREFERRED_SIZE, 128, GroupLayout.PREFERRED_SIZE)
+							.addComponent(btnQueryDocTypes, GroupLayout.PREFERRED_SIZE, 128, GroupLayout.PREFERRED_SIZE)
 							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(btnViewScanNoReference, GroupLayout.PREFERRED_SIZE, 128, GroupLayout.PREFERRED_SIZE)
+							.addComponent(btnSaveDocTypes, GroupLayout.PREFERRED_SIZE, 128, GroupLayout.PREFERRED_SIZE)
 							.addGap(229)))
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.TRAILING)
 						.addGroup(gl_panelMainPanel.createSequentialGroup()
@@ -459,12 +475,11 @@ public class DatabaseDiagnostics extends JFrame {
 							.addGap(10)
 							.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
 								.addComponent(scrollPaneScannedFiles, GroupLayout.DEFAULT_SIZE, 534, Short.MAX_VALUE)
-								.addComponent(btnCheckSchema, GroupLayout.DEFAULT_SIZE, 534, Short.MAX_VALUE)
 								.addGroup(gl_panelMainPanel.createSequentialGroup()
 									.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
 										.addComponent(btnDeleteScannedFiles, GroupLayout.PREFERRED_SIZE, 128, GroupLayout.PREFERRED_SIZE)
-										.addComponent(lblSaveLocationScans)
-										.addComponent(lblSaveLocationdocs, GroupLayout.PREFERRED_SIZE, 110, GroupLayout.PREFERRED_SIZE))
+										.addComponent(lblBackupFolder)
+										.addComponent(lblTempFolder, GroupLayout.PREFERRED_SIZE, 110, GroupLayout.PREFERRED_SIZE))
 									.addPreferredGap(ComponentPlacement.RELATED)
 									.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
 										.addGroup(gl_panelMainPanel.createSequentialGroup()
@@ -472,8 +487,8 @@ public class DatabaseDiagnostics extends JFrame {
 											.addPreferredGap(ComponentPlacement.RELATED)
 											.addComponent(btnViewScan, GroupLayout.PREFERRED_SIZE, 128, GroupLayout.PREFERRED_SIZE)
 											.addPreferredGap(ComponentPlacement.RELATED, 138, Short.MAX_VALUE))
-										.addComponent(txtSaveLocationScans, GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
-										.addComponent(txtSaveLocationDocs, GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE))))))
+										.addComponent(txtSaveLocation, GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+										.addComponent(txtTempLocationSave, GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE))))))
 					.addGap(5))
 		);
 		gl_panelMainPanel.setVerticalGroup(
@@ -489,8 +504,8 @@ public class DatabaseDiagnostics extends JFrame {
 						.addComponent(lblDocuments))
 					.addGap(11)
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
-						.addComponent(scrollPaneDocument, GroupLayout.PREFERRED_SIZE, 129, GroupLayout.PREFERRED_SIZE)
-						.addComponent(scrollPaneScannedFiles, GroupLayout.PREFERRED_SIZE, 129, GroupLayout.PREFERRED_SIZE))
+						.addComponent(scrollPaneDocument, GroupLayout.DEFAULT_SIZE, 129, Short.MAX_VALUE)
+						.addComponent(scrollPaneScannedFiles, GroupLayout.DEFAULT_SIZE, 129, Short.MAX_VALUE))
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.TRAILING)
 						.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
@@ -498,30 +513,26 @@ public class DatabaseDiagnostics extends JFrame {
 							.addComponent(btnSaveScannedFilesToDisk)
 							.addComponent(btnViewScan))
 						.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-							.addComponent(btnDeleteDocuments)
+							.addComponent(btnQueryDocuments)
 							.addComponent(btnSaveDocumentsToDisk)
 							.addComponent(btnViewDocument)))
 					.addGap(18)
 					.addComponent(lblBrokenLinks)
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-						.addComponent(scrollPaneScannedFilesNoLinkBack, GroupLayout.PREFERRED_SIZE, 129, GroupLayout.PREFERRED_SIZE)
+						.addComponent(scrollPaneScannedFilesNoLinkBack, GroupLayout.DEFAULT_SIZE, 129, Short.MAX_VALUE)
 						.addGroup(gl_panelMainPanel.createSequentialGroup()
-							.addComponent(txtSaveLocationScans, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+							.addComponent(txtSaveLocation, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 							.addGap(16)
 							.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-								.addComponent(txtSaveLocationDocs, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(lblSaveLocationdocs)))
-						.addComponent(lblSaveLocationScans))
+								.addComponent(txtTempLocationSave, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+								.addComponent(lblTempFolder)))
+						.addComponent(lblBackupFolder))
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-						.addComponent(buttonFixScannedFilesReferences)
-						.addComponent(btnViewScanNoReference))
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
-						.addComponent(btnVerifyBrokenReferenceAndMissingScannedFiles)
-						.addComponent(btnCheckSchema))
-					.addContainerGap(37, Short.MAX_VALUE))
+						.addComponent(btnQueryDocTypes)
+						.addComponent(btnSaveDocTypes))
+					.addGap(66))
 		);
 		panelMainPanel.setLayout(gl_panelMainPanel);
 	}
@@ -531,18 +542,22 @@ public class DatabaseDiagnostics extends JFrame {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd");
 		Calendar cal = Calendar.getInstance();
 		String strDate = dateFormat.format(cal.getTime());
+		String tempFolder = ConfigData.getTempFolder();
+		String backupFolder = "\\backup\\" + strDate;
 		Path currentRelativePath = Paths.get("");
 		String s = currentRelativePath.toAbsolutePath().toString();
-		s = s + "\\"+ strDate;
-		txtSaveLocationDocs.setText(s);
-		txtSaveLocationScans.setText(s);
+		tempFolder = s + "\\" + tempFolder;
+		backupFolder = s + backupFolder;
+
+		txtTempLocationSave.setText(tempFolder);
+		txtSaveLocation.setText(backupFolder);
 	}
 	
 	private void saveScannedFilesToDisk()
 	{
 		if(listScannedFilesWithoutDocuments != null && listScannedFilesWithoutDocuments.size() > 0)
 		{
-			String strPath = txtSaveLocationScans.getText();
+			String strPath = txtSaveLocation.getText();
 			FileWritingUtils.saveScannedFilesToDisk(strPath, listScannedFilesWithoutDocuments);
 		}
 	}
@@ -551,7 +566,7 @@ public class DatabaseDiagnostics extends JFrame {
 	{
 		if(listScannedFilesWithoutDocuments != null && listScannedFilesWithoutDocuments.size() > 0)
 		{
-			String strPath = txtSaveLocationScans.getText();
+			String strPath = txtSaveLocation.getText();
 			FileWritingUtils.saveDocumentsToDisk(strPath, listDocumentsWithoutScannedFiles);
 		}
 	}
@@ -560,7 +575,7 @@ public class DatabaseDiagnostics extends JFrame {
 	{
 		LoginCredentials loginCredentials = new LoginCredentials();
 		loginCredentials.doLogin();
-		new DatabaseDiagnostics(loginCredentials.getMongoClient(), loginCredentials.getDBSchema());
+		new DatabaseBackup(loginCredentials.getMongoClient(), loginCredentials.getDBSchema());
 	}
 	
 	/**

@@ -12,15 +12,15 @@ public class TableModel extends AbstractTableModel {
 
 	private static final long serialVersionUID = -7041041701893926863L;
 
-	public final String DOC_NAME = "Doc Name";
-	public final String CREATE_DATE = "Create Date";
-	public final String INSERTION_DATE = "Insertion Date";
-	public final String DESCRIPTION = "Description";
-	public final String DOC_TYPE =  "Doc Type";
-	public final String DOLLAR_AMOUNT = "Dollar Amount";
-	public final String DUE_DATE = "Due Date";
-	public final String PAID_DATE = "Paid Date";
-	public final String DOCUMENT_OBJECT = "DocumentObject";
+	private final String DOC_NAME = "Doc Name";
+	private final String CREATE_DATE = "Create Date";
+	private final String INSERTION_DATE = "Insertion Date";
+	private final String DESCRIPTION = "Description";
+	private final String DOC_TYPE =  "Doc Type";
+	private final String DOLLAR_AMOUNT = "Dollar Amount";
+	private final String DUE_DATE = "Due Date";
+	private final String PAID_DATE = "Paid Date";
+	private final String DOCUMENT_OBJECT = "DocumentObject";
 	
 	
 	private Vector<TableRow> vector;

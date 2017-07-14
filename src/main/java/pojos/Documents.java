@@ -148,7 +148,15 @@ public class Documents
 	}
 
 	public void setScannedFiles(List<ScannedFiles> scannedFiles) {
-		this.scannedFiles = scannedFiles;
+
+		if(scannedFiles == null)
+		{
+			this.scannedFiles = new LinkedList<ScannedFiles>();
+		}
+		else
+		{
+			this.scannedFiles = scannedFiles;			
+		}
 	}
 	
 	public void addScannedFile(ScannedFiles scannedFile)
@@ -205,6 +213,11 @@ public class Documents
 			if(this.getDate_due_date() == null) {
 				throw new Exception("Did not specify when this is due");
 			}
+		}
+		
+		if(this.getStrDocumentDescription().indexOf(this.getStrName()) < 0)
+		{
+			this.setStrDocumentDescription(strDocumentDescription + "\n\n : " + this.getStrName()); 
 		}
 	}
 	

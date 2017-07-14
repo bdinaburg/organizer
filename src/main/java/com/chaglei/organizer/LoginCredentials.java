@@ -76,11 +76,7 @@ public class LoginCredentials extends JFrame {
 		}
 		else
 		{
-			JOptionPane.showMessageDialog(getLoginCredentials(), "Couldn't retrieve data, either login is wrong or didn't connect.", "Could not retrieve data", JOptionPane.ERROR_MESSAGE);
-			if(mongoClient != null)
-			{
-				mongoClient.close();
-			}
+			JOptionPane.showMessageDialog(getLoginCredentials(), "Warning: Couldn't retrieve data, new schema?", "Could not retrieve data", JOptionPane.ERROR_MESSAGE);
 		}
 		return (DocumentOrganizer)jFrameParentToClose;
 	}

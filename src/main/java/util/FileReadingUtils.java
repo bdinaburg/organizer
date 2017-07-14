@@ -7,8 +7,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Vector;
 
 import org.apache.commons.io.FileUtils;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import pojos.DocumentType;
+import pojos.Documents;
 
 public class FileReadingUtils {
 	public static String readFile(String path) throws IOException {
@@ -52,6 +60,84 @@ public class FileReadingUtils {
 			e.printStackTrace();
 		}
 	}
-
 	
+	public static DocumentType readDocumentType(File file)
+	{
+	    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		String strFile =  null;
+
+		if(file.exists() == false)
+		{
+			return null;
+		}
+		
+		try {
+			strFile = FileUtils.readFileToString(file, Charset.defaultCharset());
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+		DocumentType docType = gson.fromJson(strFile, DocumentType.class);
+		
+		return docType;
+	}
+	
+	public static List<DocumentType> readDocumentTypes(String strFolderPath)
+	{
+		List<DocumentType> listOfDocumentTypes = new Vector<DocumentType>(10);
+		File fileFolderPath = new File(strFolderPath);
+		if(fileFolderPath == null || fileFolderPath.exists() == false || fileFolderPath.isDirectory() == false)
+		{
+			return null;
+		}
+		
+		for(File file : fileFolderPath.listFiles())
+		{
+			DocumentType doc = readDocumentType(file);
+			listOfDocumentTypes.add(doc);
+		}
+		
+		return listOfDocumentTypes;
+	}
+	
+	public static Documents readDocument(File file)
+	{
+	    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		String strFile =  null;
+
+		if(file.exists() == false)
+		{
+			return null;
+		}
+		
+		try {
+			strFile = FileUtils.readFileToString(file, Charset.defaultCharset());
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+		Documents document = gson.fromJson(strFile, Documents.class);
+		
+		return document;
+	}
+	
+	public static List<Documents> readDocuments(String strFolderPath)
+	{
+		List<Documents> listOfDocuments = new Vector<Documents>(50);
+		File fileFolderPath = new File(strFolderPath);
+		if(fileFolderPath == null || fileFolderPath.exists() == false || fileFolderPath.isDirectory() == false)
+		{
+			return null;
+		}
+		
+		for(File file : fileFolderPath.listFiles())
+		{
+			Documents doc = readDocument(file);
+			listOfDocuments.add(doc);
+		}
+		
+		return listOfDocuments;
+	}
 }
