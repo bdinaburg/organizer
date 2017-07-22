@@ -254,8 +254,8 @@ public class DocumentOrganizer extends JFrame {
 			    	JTable table =(JTable) e.getSource();
 			        Point p = e.getPoint();
 			        int row = table.rowAtPoint(p);
-			        row = table.convertRowIndexToModel(row);
 			        jTable.setRowSelectionInterval(row, row);
+			        row = table.convertRowIndexToModel(row);
 			    	OrganizerPopupMenu.getIntance(e.getPoint(), table, LoginCredentials.getLoginCredentials().getMongoClient(), LoginCredentials.getLoginCredentials().getDBSchema());
 		    		
 		    	}

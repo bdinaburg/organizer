@@ -52,11 +52,12 @@ class OrganizerPopupMenu extends JPopupMenu {
     	deleteMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 	        	int row = jTable.getSelectedRow();
+	        	row = jTable.convertRowIndexToModel(row);
 	        	Documents document = ((TableModel)jTable.getModel()).getDocumentAtRow(row);
 	        	if(document != null)
 	        	{
 	    			int dialogButton = JOptionPane.YES_NO_OPTION;
-	    			dialogButton = JOptionPane.showConfirmDialog (null, "Confirm... are you sure, delete?","WARNING", dialogButton);
+	    			dialogButton = JOptionPane.showConfirmDialog (null, "Confirm... are you sure, delete, \n" + document.getStrName(),"WARNING", dialogButton);
 	                if(dialogButton == JOptionPane.YES_OPTION) 
 	                {
 	                	MongoDBUtils.deleteDocument(mongoClient, strDBname, document);
