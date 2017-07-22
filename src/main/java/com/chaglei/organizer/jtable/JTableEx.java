@@ -26,6 +26,19 @@ public class JTableEx extends JTable {
     	this.setAutoCreateRowSorter(true);
     }
     
+    public int convertRowIndexToModel(int row)
+    {
+    	if(row < 0)
+    	{
+    		return -1;
+    	}
+    	
+    	else
+    	{
+    		return super.convertRowIndexToModel(row);
+    	}
+    }
+    
     public boolean getColumnWidthChanged() {
         return isColumnWidthChanged;
     }

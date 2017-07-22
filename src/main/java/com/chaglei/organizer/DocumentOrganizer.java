@@ -235,6 +235,7 @@ public class DocumentOrganizer extends JFrame {
 		jTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
 	        public void valueChanged(ListSelectionEvent event) {
 	        	int row = jTable.getSelectedRow();
+		        row = jTable.convertRowIndexToModel(row);
 	        	Documents document = ((TableModel)jTable.getModel()).getDocumentAtRow(row);
 	        	if(document != null)
 	        	{
@@ -253,6 +254,7 @@ public class DocumentOrganizer extends JFrame {
 			    	JTable table =(JTable) e.getSource();
 			        Point p = e.getPoint();
 			        int row = table.rowAtPoint(p);
+			        row = table.convertRowIndexToModel(row);
 			        jTable.setRowSelectionInterval(row, row);
 			    	OrganizerPopupMenu.getIntance(e.getPoint(), table, LoginCredentials.getLoginCredentials().getMongoClient(), LoginCredentials.getLoginCredentials().getDBSchema());
 		    		
@@ -264,6 +266,10 @@ public class DocumentOrganizer extends JFrame {
 		        JTable table =(JTable) me.getSource();
 		        Point p = me.getPoint();
 		        int row = table.rowAtPoint(p);
+		        /**
+		         * after you sort elements they visually disalign to where they are in the model
+		         * need to call the function to find where they actually are.
+		         */
 		        row = table.convertRowIndexToModel(row);
 		        if (me.getClickCount() == 2) {
 		        	Documents document = ((TableModel)jTable.getModel()).getDocumentAtRow(row);
