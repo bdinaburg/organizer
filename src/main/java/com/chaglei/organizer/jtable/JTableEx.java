@@ -22,6 +22,8 @@ public class JTableEx extends JTable {
     	super();
     	this.getColumnModel().addColumnModelListener(new TableColumnWidthListener());
     	this.getTableHeader().addMouseListener(new TableHeaderMouseListener());
+    	this.setDefaultRenderer(Object.class, new DocumentCellRenderer());
+    	this.setAutoCreateRowSorter(true);
     }
     
     public boolean getColumnWidthChanged() {

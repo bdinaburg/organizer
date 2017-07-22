@@ -56,7 +56,7 @@ public class TableModel extends AbstractTableModel {
 		case DOC_NAME:
 			return vector.elementAt(rowIndex).getDocument().getStrName();
 		case CREATE_DATE:
-			return vector.elementAt(rowIndex).getDocument().getDate_document_creation().toString();
+			return vector.elementAt(rowIndex).getDocument().getDate_document_creation();
 		case INSERTION_DATE:
 			return vector.elementAt(rowIndex).getDocument().getDate_document_database_insertion();
 		case DESCRIPTION:
@@ -64,19 +64,15 @@ public class TableModel extends AbstractTableModel {
 		case DOC_TYPE:
 			return vector.elementAt(rowIndex).getDocument().getDocumentType().toString();
 		case DOLLAR_AMOUNT:
-			return vector.elementAt(rowIndex).getDocument().getBigDecimalAmount().toString();
+			return vector.elementAt(rowIndex).getDocument().getBigDecimalAmount();
 		case DUE_DATE:
-			if(vector.elementAt(rowIndex).getDocument().getDate_due_date() == null)
-			{
-				return "";
-			}
-			return vector.elementAt(rowIndex).getDocument().getDate_due_date().toString();
+			return vector.elementAt(rowIndex).getDocument().getDate_due_date();
 		case PAID_DATE:
 			if(vector.elementAt(rowIndex).getDocument().getDate_paid_date() == null)
 			{
 				return "";
 			}
-			return vector.elementAt(rowIndex).getDocument().getDate_paid_date().toString();
+			return vector.elementAt(rowIndex).getDocument().getDate_paid_date();
 		case DOCUMENT_OBJECT:
 			return vector.elementAt(rowIndex).getDocument().toString();
 		}

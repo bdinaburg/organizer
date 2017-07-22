@@ -14,6 +14,7 @@ import org.mongodb.morphia.annotations.Index;
 import org.mongodb.morphia.annotations.Indexes;
 import org.mongodb.morphia.annotations.Property;
 
+import transientPojos.DocTypes;
 import transientPojos.DocTypes.DocType;
 
 // BILL_MEDICAL, BILL_DENTAL, BILL_CAR, DOCUMENT_GOVERNMENT, DOCUMENT_PRIVATE, ESTIMATE 
@@ -56,6 +57,8 @@ public class DocumentType {
 			return "PRIVATE COMPANY DOCUMENT";
 		case ESTIMATE:
 			return "ESTIMATE";
+		case PHOTO_PERSONAL:
+			return "PERSONAL PHOTO";
 		default:
 			return "UNKNOWN";
 		}
@@ -83,6 +86,8 @@ public class DocumentType {
 			return DocType.DOCUMENT_GOVERNMENT;
 		case "PRIVATE COMPANY DOCUMENT":
 			return DocType.DOCUMENT_PRIVATE;
+		case "PERSONAL PHOTO":
+			return DocType.PHOTO_PERSONAL;
 		case "ESTIMATE":
 			return DocType.ESTIMATE;
 		}

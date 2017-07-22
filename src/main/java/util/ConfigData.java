@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Properties;
 
@@ -86,6 +88,52 @@ public class ConfigData {
 		return getPropertiesFile().getProperty("loginCredentials.height");
 	}
 	
+	public static String getColumnDateFormat() {
+		return getPropertiesFile().getProperty("columnformat.dateformat");
+	}
+	
+	/**
+	 * 
+	 * @return true or false. If true that means strip out the path.
+	 */
+	public static String getColumnHidePath() {
+		return getPropertiesFile().getProperty("columnformat.hidepath");
+	}
+	
+	/**
+	 * Set the value if we want the path hidden or not
+	 */
+	public static void setColumnHidePath(boolean hidePath) {
+		getPropertiesFile().setProperty("columnformat.hidepath", (new Boolean(hidePath)).toString());
+		savePropertiesFile();
+	}
+	
+	/**
+	 * Meant to format the dates in the jtable. When they enter and apply the dates
+	 * through the ColumnFormatter class this should save it.
+	 * returns false if you pass invalid date format
+	 * @return
+	 */
+	public static boolean setColumnDateFormat(String dateFormat) {
+		try
+		{
+			Date myDate = new Date();
+			SimpleDateFormat testFormat = new SimpleDateFormat(dateFormat);
+
+			String mdy = testFormat.format(myDate);
+			testFormat.parse(mdy);
+
+		}
+		catch(Exception anyExc)
+		{
+			getPropertiesFile().setProperty("columnformat.dateformat", "");
+			savePropertiesFile();
+			return false;
+		}
+		getPropertiesFile().setProperty("columnformat.dateformat", dateFormat);
+		savePropertiesFile();
+		return true;
+	}
 	/**
 	 * returns the column names of the columns that were last visible
 	 * @return

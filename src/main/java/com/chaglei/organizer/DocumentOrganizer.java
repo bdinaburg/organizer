@@ -26,8 +26,10 @@ import javax.swing.ListSelectionModel;
 import javax.swing.WindowConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.TableRowSorter;
 
 import com.chaglei.organizer.jtable.JTableEx;
+import com.chaglei.organizer.jtable.TableComparator;
 import com.chaglei.organizer.jtable.TableModel;
 
 import pojos.Documents;
@@ -157,15 +159,6 @@ public class DocumentOrganizer extends JFrame {
 		
 		menuOrganizer.add(menuItemAddDocument);
 		
-		JMenuItem menuItemHideShowColumns = new JMenuItem("Hide / Show Columns");
-		
-		menuItemHideShowColumns.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				new ColumnConfigurator(jTable);
-			}
-		});
-		menuOrganizer.add(menuItemHideShowColumns);
-		
 		JMenu menuDatabase = new JMenu("Database");
 		menuBar.add(menuDatabase);
 		
@@ -179,11 +172,49 @@ public class DocumentOrganizer extends JFrame {
 		
 		JMenuItem menuItemDatabaseIntegrity = new JMenuItem("Database Integrity Check");
 		menuDatabase.add(menuItemDatabaseIntegrity);
+		
+		JMenuItem menuItemDatabaseBackup = new JMenuItem("Database Backup");
+		menuDatabase.add(menuItemDatabaseBackup);
+		menuItemDatabaseBackup.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				new DatabaseBackup(LoginCredentials.getLoginCredentials().getMongoClient(), LoginCredentials.getLoginCredentials().getDBSchema());
+			}
+		});
+		
+		JMenuItem menuItemDatabaseRestore = new JMenuItem("Database Restore");
+		menuDatabase.add(menuItemDatabaseRestore);
+		
+		JMenu menuPreferences = new JMenu("Preferences");
+		menuPreferences.setMnemonic('o');
+		menuBar.add(menuPreferences);
+		
+		JMenuItem menuItemHideShowColumns = new JMenuItem("Hide / Show Columns");
+		menuPreferences.add(menuItemHideShowColumns);
+		menuItemHideShowColumns.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				new ColumnConfigurator(jTable);
+			}
+		});
+		
+		JMenuItem menuItemColumnFormats = new JMenuItem("Format Columns");
+		menuPreferences.add(menuItemColumnFormats);
+		menuItemColumnFormats.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				ColumnFormatter.getInstance(true);
+			}
+		});
+		menuItemDatabaseRestore.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				new DatabaseRestore(LoginCredentials.getLoginCredentials().getMongoClient(), LoginCredentials.getLoginCredentials().getDBSchema());
+			}
+		});
+		
 		menuItemDatabaseIntegrity.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				new DatabaseDiagnostics(LoginCredentials.getLoginCredentials().getMongoClient(), LoginCredentials.getLoginCredentials().getDBSchema());
 			}
 		});
+
 		
 		this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		this.setSize(1920/2, 1080/2);
@@ -233,6 +264,7 @@ public class DocumentOrganizer extends JFrame {
 		        JTable table =(JTable) me.getSource();
 		        Point p = me.getPoint();
 		        int row = table.rowAtPoint(p);
+		        row = table.convertRowIndexToModel(row);
 		        if (me.getClickCount() == 2) {
 		        	Documents document = ((TableModel)jTable.getModel()).getDocumentAtRow(row);
 		        	String strFileName = FileReadingUtils.getCurrentPath();
@@ -242,18 +274,29 @@ public class DocumentOrganizer extends JFrame {
 		        }
 		    }
 		});
+		
+		/**
+		 * I can't believe this sorting shit actually worked
+		 */
 		jTable.setModel(new TableModel());
+		final TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>((TableModel) jTable.getModel());
+		sorter.setSortsOnUpdates(true);
+		for (int i = 0; i < jTable.getColumnCount(); ++i) {
+			sorter.setComparator(i, new TableComparator(true));
+		}
+		jTable.setRowSorter(sorter);
+
 		jTable.setFillsViewportHeight(true);
 
 	}
 
 	public static void main(String[] args) 
 	{
-		LoginCredentials loginCredentials = new LoginCredentials();
-		DocumentOrganizer documentOrganizer = loginCredentials.doLogin();
+		LoginCredentials.main(null);
+		DocumentOrganizer documentOrganizer = LoginCredentials.getLoginCredentials().doLogin();
 		
-		List<Documents> listOfDocuments = MongoDBUtils.getDocuments(loginCredentials.getMongoClient(), loginCredentials.getDBSchema());
-		((TableModel)documentOrganizer.jTable.getModel()).populateDataModel(listOfDocuments);
+		//List<Documents> listOfDocuments = MongoDBUtils.getDocuments(loginCredentials.getMongoClient(), loginCredentials.getDBSchema());
+		//((TableModel)documentOrganizer.jTable.getModel()).populateDataModel(listOfDocuments);
 	}
 
 }

@@ -22,3 +22,9 @@ hs_err_pid*
 
 #temporary file for testing
 configuration.properties
+
+#certain folders to ignore, don't need compiled files and temps, and database backups
+
+temp/
+target/
+backup/
