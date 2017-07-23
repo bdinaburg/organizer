@@ -2,6 +2,10 @@ package com.chaglei.organizer;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDropEvent;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -60,6 +64,7 @@ public class InsertDocuments extends JFrame {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 	}
 	
+	@SuppressWarnings("serial")
 	private void buildGUI()
 	{
 		setTitle("Insert Document");
@@ -72,7 +77,7 @@ public class InsertDocuments extends JFrame {
 		
 		JLabel lblDocumentName = new JLabel("Document Name:");
 		
-		JLabel lblCreateDate = new JLabel("Create Date:");
+		JLabel lblCreateDateb = new JLabel("Create Date:");
 		
 		JLabel lblDueDate = new JLabel("Due Date:");
 		
@@ -86,6 +91,14 @@ public class InsertDocuments extends JFrame {
 		
 		JLabel lblPaidDate = new JLabel("Paid Date:");
 		
+		JLabel lblPDFText = new JLabel("PDF Text / Description:");
+		
+		/**
+		 * These are currently not being used as the textAreaPDFText has replaced these
+		 * may will do something with these later
+		 */
+		lblDescription.setVisible(false);
+		txtDescription.setVisible(false);
 		txtAmount.setText("0");
 		txtAmount.setColumns(10);
 		
@@ -115,7 +128,7 @@ public class InsertDocuments extends JFrame {
 			}
 		});
 		
-		JLabel lblPDFText = new JLabel("PDF Text:");
+
 		
 		JButton button = new JButton("Save Doc");
 		button.addActionListener(new ActionListener() {
@@ -125,43 +138,55 @@ public class InsertDocuments extends JFrame {
 		});
 		GroupLayout gl_panelMainPanel = new GroupLayout(panelMainPanel);
 		gl_panelMainPanel.setHorizontalGroup(
-			gl_panelMainPanel.createParallelGroup(Alignment.TRAILING)
+			gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panelMainPanel.createSequentialGroup()
+					.addContainerGap(909, Short.MAX_VALUE)
+					.addComponent(button, GroupLayout.PREFERRED_SIZE, 98, GroupLayout.PREFERRED_SIZE)
+					.addGap(45))
+				.addGroup(gl_panelMainPanel.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(lblPDFText, GroupLayout.PREFERRED_SIZE, 187, GroupLayout.PREFERRED_SIZE)
+					.addContainerGap(853, Short.MAX_VALUE))
+				.addGroup(gl_panelMainPanel.createSequentialGroup()
+					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panelMainPanel.createSequentialGroup()
+							.addGap(8)
+							.addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+						.addGroup(gl_panelMainPanel.createSequentialGroup()
+							.addContainerGap()
+							.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panelMainPanel.createSequentialGroup()
+									.addComponent(lblCreateDateb, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
+									.addGap(92)
+									.addComponent(txtCreateDate, GroupLayout.DEFAULT_SIZE, 678, Short.MAX_VALUE))
+								.addGroup(gl_panelMainPanel.createSequentialGroup()
+									.addComponent(lblDescription, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
+									.addGap(92)
+									.addComponent(txtDescription, GroupLayout.PREFERRED_SIZE, 679, GroupLayout.PREFERRED_SIZE)))
+							.addGap(12)))
+					.addGap(175))
 				.addGroup(gl_panelMainPanel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
 						.addComponent(lblDocumentName)
-						.addComponent(lblCreateDate, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
 						.addComponent(lblDueDate, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
-						.addComponent(lblAmount, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
 						.addComponent(lblPaidDate, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
 						.addComponent(lblCurrency, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
-						.addComponent(lblDescription, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
-						.addComponent(lblDocumentType, GroupLayout.PREFERRED_SIZE, 135, GroupLayout.PREFERRED_SIZE))
+						.addComponent(lblDocumentType, GroupLayout.PREFERRED_SIZE, 135, GroupLayout.PREFERRED_SIZE)
+						.addComponent(lblAmount, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE))
 					.addGap(39)
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
-						.addComponent(txtDescription, GroupLayout.DEFAULT_SIZE, 678, Short.MAX_VALUE)
 						.addComponent(txtAmount, GroupLayout.DEFAULT_SIZE, 678, Short.MAX_VALUE)
 						.addComponent(txtDocumentName, GroupLayout.DEFAULT_SIZE, 678, Short.MAX_VALUE)
-						.addComponent(txtCreateDate, 678, 678, Short.MAX_VALUE)
 						.addComponent(txtDueDate, 678, 678, Short.MAX_VALUE)
 						.addComponent(txtPaidDate, 678, 678, Short.MAX_VALUE)
 						.addComponent(txtCurrency, 678, 678, Short.MAX_VALUE)
-						.addComponent(comboBoxDocumentTypes, 0, 678, Short.MAX_VALUE))
+						.addGroup(gl_panelMainPanel.createSequentialGroup()
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addComponent(comboBoxDocumentTypes, 0, 678, Short.MAX_VALUE)))
 					.addGap(44)
 					.addComponent(btnFindDoc, GroupLayout.PREFERRED_SIZE, 98, GroupLayout.PREFERRED_SIZE)
 					.addGap(46))
-				.addGroup(gl_panelMainPanel.createSequentialGroup()
-					.addGap(8)
-					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 1032, Short.MAX_VALUE)
-					.addContainerGap())
-				.addGroup(gl_panelMainPanel.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(lblPDFText, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(958, Short.MAX_VALUE))
-				.addGroup(gl_panelMainPanel.createSequentialGroup()
-					.addContainerGap(907, Short.MAX_VALUE)
-					.addComponent(button, GroupLayout.PREFERRED_SIZE, 98, GroupLayout.PREFERRED_SIZE)
-					.addGap(45))
 		);
 		gl_panelMainPanel.setVerticalGroup(
 			gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
@@ -173,46 +198,73 @@ public class InsertDocuments extends JFrame {
 								.addComponent(txtDocumentName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 								.addComponent(btnFindDoc))
 							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addComponent(txtCreateDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-							.addGap(18)
-							.addComponent(txtDueDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-							.addGap(13)
-							.addComponent(txtAmount, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-							.addGap(18)
 							.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-								.addComponent(txtPaidDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(lblPaidDate)))
+								.addComponent(lblDocumentType)
+								.addComponent(comboBoxDocumentTypes, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+							.addGap(18)
+							.addComponent(txtDueDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 						.addGroup(gl_panelMainPanel.createSequentialGroup()
 							.addComponent(lblDocumentName)
-							.addGap(24)
-							.addComponent(lblCreateDate)
-							.addGap(25)
-							.addComponent(lblDueDate)
+							.addGap(65)
+							.addComponent(lblDueDate)))
+					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panelMainPanel.createSequentialGroup()
+							.addGap(20)
+							.addComponent(lblAmount))
+						.addGroup(gl_panelMainPanel.createSequentialGroup()
 							.addGap(18)
-							.addComponent(lblAmount)))
+							.addComponent(txtAmount, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
+					.addGap(13)
+					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(txtPaidDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(lblPaidDate))
 					.addGap(14)
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(txtCurrency, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 						.addComponent(lblCurrency))
-					.addGap(18)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+						.addComponent(lblCreateDateb)
+						.addComponent(txtCreateDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addGap(18)
+					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
 						.addComponent(txtDescription, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 						.addComponent(lblDescription))
-					.addGap(13)
-					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-						.addComponent(comboBoxDocumentTypes, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(lblDocumentType))
-					.addGap(11)
+					.addGap(24)
 					.addComponent(lblPDFText)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 126, Short.MAX_VALUE)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 81, Short.MAX_VALUE)
 					.addGap(28)
 					.addComponent(button)
 					.addContainerGap())
 		);
 		
 		scrollPane.setViewportView(textAreaPDFText);
-		panelMainPanel.setLayout(gl_panelMainPanel);		
+		panelMainPanel.setLayout(gl_panelMainPanel);
+		
+		txtDocumentName.setDropTarget(new DropTarget() {
+		    public synchronized void drop(DropTargetDropEvent evt) {
+		        try {
+		            evt.acceptDrop(DnDConstants.ACTION_COPY);
+		            Object obj = evt.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+		            if(obj instanceof List<?>)
+		            {
+			            List<?> droppedFiles = (List<?>) evt.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+			            for (Object potentialFile : droppedFiles) 
+			            {
+			            	if(potentialFile instanceof File)
+			            	{
+			            		txtDocumentName.setText(((File) potentialFile).getAbsolutePath());
+			            	}
+			                
+			            }
+		            }
+
+		        } catch (Exception ex) {
+		            ex.printStackTrace();
+		        }
+		    }
+		});
 	}
 	
 	private void populateDocTypes()
