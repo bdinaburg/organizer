@@ -31,16 +31,22 @@ import pojos.DocumentType;
 import pojos.Documents;
 import pojos.ScannedFiles;
 import swingUtil.JTextFieldEnhanced;
+import transientPojos.DocTypes.DocType;
 import util.FileReadingUtils;
 import util.FrameUtil;
 import util.MongoDBUtils;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.ActionEvent;
 
 public class InsertDocuments extends JFrame {
 	private static final long serialVersionUID = 1L;
 	protected String strDBSchema = null;
 	MongoClient mongoClient = null;
+	JButton btnFindDoc = new JButton("Find Doc..");
+	
+	
 	JTextFieldEnhanced txtDocumentName = new JTextFieldEnhanced();
 	JTextFieldEnhanced txtCreateDate = new JTextFieldEnhanced();
 	JTextFieldEnhanced txtDueDate = new JTextFieldEnhanced();
@@ -56,7 +62,7 @@ public class InsertDocuments extends JFrame {
 		this.mongoClient = mongoClient;
 		buildGUI();
 		populateDocTypes();
-		populateDates();
+		populateFields();
 		setSize((int)(1920/1.8), 1080/2);
 		setPreferredSize(new Dimension((int)(1920/1.8), 1080/2));
 		FrameUtil.centerWindow(this);
@@ -118,8 +124,7 @@ public class InsertDocuments extends JFrame {
 		txtCurrency.setText("USD");
 		txtCurrency.setEditable(false);
 		txtCurrency.setColumns(10);
-		
-		JButton btnFindDoc = new JButton("Find Doc..");
+	
 		btnFindDoc.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				String strFile = chosenFile();
@@ -130,18 +135,26 @@ public class InsertDocuments extends JFrame {
 		
 
 		
-		JButton button = new JButton("Save Doc");
-		button.addActionListener(new ActionListener() {
+		JButton btnSaveDoc = new JButton("Save Doc");
+		btnSaveDoc.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				insertDocument();
 			}
 		});
+		
+		/**
+		 * ItemChangeListener is an internal class. Listens for changes and adjusts the GUI 
+		 * accordingly as not all input fields make sense for every type of document
+		 */
+		comboBoxDocumentTypes.addItemListener(new ItemChangeListener());
+		
+		
 		GroupLayout gl_panelMainPanel = new GroupLayout(panelMainPanel);
 		gl_panelMainPanel.setHorizontalGroup(
 			gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panelMainPanel.createSequentialGroup()
 					.addContainerGap(909, Short.MAX_VALUE)
-					.addComponent(button, GroupLayout.PREFERRED_SIZE, 98, GroupLayout.PREFERRED_SIZE)
+					.addComponent(btnSaveDoc, GroupLayout.PREFERRED_SIZE, 98, GroupLayout.PREFERRED_SIZE)
 					.addGap(45))
 				.addGroup(gl_panelMainPanel.createSequentialGroup()
 					.addContainerGap()
@@ -235,7 +248,7 @@ public class InsertDocuments extends JFrame {
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 81, Short.MAX_VALUE)
 					.addGap(28)
-					.addComponent(button)
+					.addComponent(btnSaveDoc)
 					.addContainerGap())
 		);
 		
@@ -277,7 +290,7 @@ public class InsertDocuments extends JFrame {
 
 	}
 	
-	private void populateDates()
+	private void populateFields()
 	{
 		DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 		Calendar cal = Calendar.getInstance();
@@ -285,6 +298,8 @@ public class InsertDocuments extends JFrame {
 		this.txtCreateDate.setText(strDate);
 		this.txtDueDate.setText(strDate);
 		this.txtPaidDate.setText(strDate);
+		this.txtDueDate.setEnabled(true);
+		this.txtPaidDate.setEnabled(true);
 	}
 	
 	private String chosenFile()
@@ -354,5 +369,26 @@ public class InsertDocuments extends JFrame {
 		LoginCredentials loginCredentials = new LoginCredentials();
 		loginCredentials.doLogin();
 		new InsertDocuments(loginCredentials.getMongoClient(), loginCredentials.getDBSchema());
+	}
+	
+	class ItemChangeListener implements ItemListener 
+	{
+		@Override
+		public void itemStateChanged(ItemEvent event) 
+		{
+			if (event.getStateChange() == ItemEvent.SELECTED) {
+				DocumentType documentType = (DocumentType) event.getItem();
+				populateFields();
+				String strDocSelected = documentType.toString();
+				final String PERSONAL_PHOTO = DocumentType.docTypeToString(DocType.PHOTO_PERSONAL);
+				if (strDocSelected.equalsIgnoreCase(PERSONAL_PHOTO) == true) {
+					txtDueDate.setText("");
+					txtPaidDate.setText("");
+					txtDueDate.setEnabled(false);
+					txtPaidDate.setEnabled(false);
+				}
+				// do something with object
+			}
+		}
 	}
 }
