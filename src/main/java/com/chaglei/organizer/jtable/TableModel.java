@@ -20,13 +20,14 @@ public class TableModel extends AbstractTableModel {
 	private final String DOLLAR_AMOUNT = "Dollar Amount";
 	private final String DUE_DATE = "Due Date";
 	private final String PAID_DATE = "Paid Date";
+	private final String ADDRESS = "Address";
 	private final String DOCUMENT_OBJECT = "DocumentObject";
 	
 	
 	private Vector<TableRow> vector;
 	TableColumnModel tableColumnModel;
 
-	private String[] columnNames = { DOC_NAME, CREATE_DATE, INSERTION_DATE, DESCRIPTION, DOC_TYPE, DOLLAR_AMOUNT, DUE_DATE, PAID_DATE, DOCUMENT_OBJECT};
+	private String[] columnNames = { DOC_NAME, CREATE_DATE, INSERTION_DATE, DESCRIPTION, DOC_TYPE, DOLLAR_AMOUNT, DUE_DATE, PAID_DATE, ADDRESS, DOCUMENT_OBJECT};
 
 	public TableModel() {
 		vector = new Vector<TableRow>(25);
@@ -73,6 +74,8 @@ public class TableModel extends AbstractTableModel {
 				return "";
 			}
 			return vector.elementAt(rowIndex).getDocument().getDate_paid_date();
+		case ADDRESS:
+			return vector.elementAt(rowIndex).getDocument().getStrAddress();
 		case DOCUMENT_OBJECT:
 			return vector.elementAt(rowIndex).getDocument().toString();
 		}

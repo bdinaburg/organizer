@@ -78,7 +78,7 @@ public class DateUtil
 	}
 
 	
-	private static Months fromStringToEnum(String month)
+	public static Months fromStringToEnum(String month)
 	{
 		month = month.toUpperCase();
 		switch (month)

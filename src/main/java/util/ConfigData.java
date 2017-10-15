@@ -1,5 +1,6 @@
 package util;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -61,6 +62,28 @@ public class ConfigData {
 		return getPropertiesFile().getProperty("tempfolder");
 	}
 	
+	/**
+	 * when user opens a file save the last place they tried to open
+	 * @return
+	 */
+	public static String getLastFolder() {
+		String strfolder = getPropertiesFile().getProperty("lastfolder");
+		try
+		{
+			File folder = new File(strfolder);
+			if(folder.isDirectory() == true)
+			{
+				return strfolder;
+			}
+		}
+		catch(Exception anyExc)
+		{
+			System.err.println(anyExc);
+		}
+
+		return System.getProperty("user.home");
+	}
+	
 	public static String getHostName() {
 		return getPropertiesFile().getProperty("hostname");
 	}
@@ -90,6 +113,14 @@ public class ConfigData {
 	
 	public static String getColumnDateFormat() {
 		return getPropertiesFile().getProperty("columnformat.dateformat");
+	}
+	
+	/**
+	 * date format for the input dialog to insert a new file
+	 * @return
+	 */
+	public static String getInsertDateFormat() {
+		return getPropertiesFile().getProperty("insert.dateformat");
 	}
 	
 	/**
@@ -134,6 +165,56 @@ public class ConfigData {
 		savePropertiesFile();
 		return true;
 	}
+	
+	/**
+	 * Meant to format the dates in the InsertDocuments window. This is the format that the date
+	 * should be entered in.
+	 * returns false if you pass invalid date format
+	 * @return
+	 */
+	public static boolean setInsertDateFormat(String dateFormat) {
+		try
+		{
+			Date myDate = new Date();
+			SimpleDateFormat testFormat = new SimpleDateFormat(dateFormat);
+
+			String mdy = testFormat.format(myDate);
+			testFormat.parse(mdy);
+
+		}
+		catch(Exception anyExc)
+		{
+			getPropertiesFile().setProperty("insert.dateformat", "");
+			savePropertiesFile();
+			return false;
+		}
+		getPropertiesFile().setProperty("insert.dateformat", dateFormat);
+		savePropertiesFile();
+		return true;
+	}
+	
+	public static boolean setLastFolder(String strFolderPath) {
+		try
+		{
+			File folder = new File(strFolderPath);
+			if(folder.isDirectory() == true)
+			{
+				getPropertiesFile().setProperty("lastfolder", strFolderPath);
+				savePropertiesFile();
+				return true;
+			}
+			
+		}
+		catch(Exception anyExc)
+		{
+			getPropertiesFile().setProperty("lastfolder", "");
+			savePropertiesFile();
+			return false;
+		}
+		return false;
+
+	}
+	
 	/**
 	 * returns the column names of the columns that were last visible
 	 * @return

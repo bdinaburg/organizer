@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
+import javax.swing.ComboBoxModel;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
@@ -31,7 +32,11 @@ import pojos.DocumentType;
 import pojos.Documents;
 import pojos.ScannedFiles;
 import swingUtil.JTextFieldEnhanced;
+import transientPojos.DocTypes;
 import transientPojos.DocTypes.DocType;
+import transientPojos.ExifData;
+import util.ConfigData;
+import util.ExifUtils;
 import util.FileReadingUtils;
 import util.FrameUtil;
 import util.MongoDBUtils;
@@ -45,7 +50,18 @@ public class InsertDocuments extends JFrame {
 	protected String strDBSchema = null;
 	MongoClient mongoClient = null;
 	JButton btnFindDoc = new JButton("Find Doc..");
+	JButton btnSaveDoc = new JButton("Save Doc");
 	
+	JLabel lblDocumentName = new JLabel("Document Name:");
+	JLabel lblDocumentType = new JLabel("Document Type:");
+	JLabel lblCreateDateb = new JLabel("Create Date:");
+	JLabel lblDueDate = new JLabel("Due Date:");
+	JLabel lblAmount = new JLabel("Amount:");
+	JLabel lblDescription = new JLabel("Description:");
+	JLabel lblCurrency = new JLabel("Currency:");
+	JLabel lblPaidDate = new JLabel("Paid Date:");
+	JLabel lblPDFText = new JLabel("PDF Text / Description:");
+	JLabel lblIMGLocation = new JLabel("Location");
 	
 	JTextFieldEnhanced txtDocumentName = new JTextFieldEnhanced();
 	JTextFieldEnhanced txtCreateDate = new JTextFieldEnhanced();
@@ -54,13 +70,14 @@ public class InsertDocuments extends JFrame {
 	JTextFieldEnhanced txtPaidDate = new JTextFieldEnhanced();
 	JTextFieldEnhanced txtCurrency = new JTextFieldEnhanced();
 	JTextFieldEnhanced txtDescription = new JTextFieldEnhanced();
+	JTextFieldEnhanced txtIMGLocation = new JTextFieldEnhanced();
 	JComboBox<DocumentType> comboBoxDocumentTypes = new JComboBox<DocumentType>();
 	JTextArea textAreaPDFText = new JTextArea();
 	
 	public InsertDocuments(MongoClient mongoClient, String schema) {
 		this.strDBSchema = schema;
 		this.mongoClient = mongoClient;
-		buildGUI();
+		buildGUI("Insert Document");
 		populateDocTypes();
 		populateFields();
 		setSize((int)(1920/1.8), 1080/2);
@@ -71,9 +88,9 @@ public class InsertDocuments extends JFrame {
 	}
 	
 	@SuppressWarnings("serial")
-	private void buildGUI()
+	private void buildGUI(String strTitle)
 	{
-		setTitle("Insert Document");
+		setTitle(strTitle);
 		getContentPane().setLayout(new BorderLayout(0, 0));
 		
 		JPanel panelMainPanel = new JPanel();
@@ -81,23 +98,7 @@ public class InsertDocuments extends JFrame {
 		
 		JScrollPane scrollPane = new JScrollPane();
 		
-		JLabel lblDocumentName = new JLabel("Document Name:");
-		
-		JLabel lblCreateDateb = new JLabel("Create Date:");
-		
-		JLabel lblDueDate = new JLabel("Due Date:");
-		
-		JLabel lblAmount = new JLabel("Amount:");
-		
-		JLabel lblDescription = new JLabel("Description:");
-		
-		JLabel lblDocumentType = new JLabel("Document Type:");
-		
-		JLabel lblCurrency = new JLabel("Currency:");
-		
-		JLabel lblPaidDate = new JLabel("Paid Date:");
-		
-		JLabel lblPDFText = new JLabel("PDF Text / Description:");
+
 		
 		/**
 		 * These are currently not being used as the textAreaPDFText has replaced these
@@ -129,13 +130,13 @@ public class InsertDocuments extends JFrame {
 			public void actionPerformed(ActionEvent arg0) {
 				String strFile = chosenFile();
 				txtDocumentName.setText(strFile);
-				
+				setComboBoxValue();
 			}
 		});
 		
 
 		
-		JButton btnSaveDoc = new JButton("Save Doc");
+
 		btnSaveDoc.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				insertDocument();
@@ -183,6 +184,7 @@ public class InsertDocuments extends JFrame {
 					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
 						.addComponent(lblDocumentName)
 						.addComponent(lblDueDate, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
+						.addComponent(lblIMGLocation, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
 						.addComponent(lblPaidDate, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
 						.addComponent(lblCurrency, GroupLayout.PREFERRED_SIZE, 82, GroupLayout.PREFERRED_SIZE)
 						.addComponent(lblDocumentType, GroupLayout.PREFERRED_SIZE, 135, GroupLayout.PREFERRED_SIZE)
@@ -192,65 +194,65 @@ public class InsertDocuments extends JFrame {
 						.addComponent(txtAmount, GroupLayout.DEFAULT_SIZE, 678, Short.MAX_VALUE)
 						.addComponent(txtDocumentName, GroupLayout.DEFAULT_SIZE, 678, Short.MAX_VALUE)
 						.addComponent(txtDueDate, 678, 678, Short.MAX_VALUE)
+						.addComponent(txtIMGLocation, 678, 678, Short.MAX_VALUE)
 						.addComponent(txtPaidDate, 678, 678, Short.MAX_VALUE)
 						.addComponent(txtCurrency, 678, 678, Short.MAX_VALUE)
-						.addGroup(gl_panelMainPanel.createSequentialGroup()
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(comboBoxDocumentTypes, 0, 678, Short.MAX_VALUE)))
+						.addComponent(comboBoxDocumentTypes, 678, 678, Short.MAX_VALUE))
 					.addGap(44)
 					.addComponent(btnFindDoc, GroupLayout.PREFERRED_SIZE, 98, GroupLayout.PREFERRED_SIZE)
 					.addGap(46))
 		);
-		gl_panelMainPanel.setVerticalGroup(
-			gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panelMainPanel.createSequentialGroup()
-					.addContainerGap()
-					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panelMainPanel.createSequentialGroup()
-							.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-								.addComponent(txtDocumentName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(btnFindDoc))
-							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-								.addComponent(lblDocumentType)
-								.addComponent(comboBoxDocumentTypes, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-							.addGap(18)
-							.addComponent(txtDueDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-						.addGroup(gl_panelMainPanel.createSequentialGroup()
-							.addComponent(lblDocumentName)
-							.addGap(65)
-							.addComponent(lblDueDate)))
-					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panelMainPanel.createSequentialGroup()
-							.addGap(20)
-							.addComponent(lblAmount))
-						.addGroup(gl_panelMainPanel.createSequentialGroup()
-							.addGap(18)
-							.addComponent(txtAmount, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
-					.addGap(13)
-					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-						.addComponent(txtPaidDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(lblPaidDate))
-					.addGap(14)
-					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-						.addComponent(txtCurrency, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(lblCurrency))
-					.addPreferredGap(ComponentPlacement.UNRELATED)
-					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
-						.addComponent(lblCreateDateb)
-						.addComponent(txtCreateDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
-					.addGap(18)
-					.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
-						.addComponent(txtDescription, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(lblDescription))
-					.addGap(24)
-					.addComponent(lblPDFText)
-					.addPreferredGap(ComponentPlacement.UNRELATED)
-					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 81, Short.MAX_VALUE)
-					.addGap(28)
-					.addComponent(btnSaveDoc)
-					.addContainerGap())
-		);
+		gl_panelMainPanel
+				.setVerticalGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panelMainPanel.createSequentialGroup().addContainerGap()
+								.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
+										.addGroup(gl_panelMainPanel.createSequentialGroup()
+												.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+														.addComponent(lblDocumentName)
+														.addComponent(txtDocumentName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+														.addComponent(btnFindDoc))
+												.addGap(20)
+												.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+														.addComponent(lblDocumentType)
+														.addComponent(comboBoxDocumentTypes, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+												.addGap(20)
+												/**
+												 * this magic stuff here makes due date and image location be placed on top of each other
+												 * since they will never both be visible at the same time. Designed so that when user
+												 * selects a different type of document he gets proper entry fields.
+												 */
+												.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+														.addComponent(lblDueDate)
+														.addComponent(txtDueDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+												.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+														.addComponent(lblIMGLocation)
+														.addComponent(txtIMGLocation, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)))
+												.addGap(20)
+												.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+														.addComponent(lblAmount)
+														.addComponent(txtAmount, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+												.addGap(20)
+												.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+														.addComponent(lblPaidDate)
+														.addComponent(txtPaidDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+												.addGap(20)
+												.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+														.addComponent(lblCurrency)
+														.addComponent(txtCurrency, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+												.addGap(20)
+												.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.BASELINE)
+														.addComponent(lblCreateDateb)
+														.addComponent(txtCreateDate, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))												
+														
+														))
+								.addGap(10)
+								.addGroup(gl_panelMainPanel.createParallelGroup(Alignment.LEADING)
+										.addComponent(txtDescription, GroupLayout.PREFERRED_SIZE,
+												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+										.addComponent(lblDescription))
+								.addGap(20).addComponent(lblPDFText).addPreferredGap(ComponentPlacement.UNRELATED)
+								.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 81, Short.MAX_VALUE).addGap(28)
+								.addComponent(btnSaveDoc).addContainerGap()));
 		
 		scrollPane.setViewportView(textAreaPDFText);
 		panelMainPanel.setLayout(gl_panelMainPanel);
@@ -267,7 +269,15 @@ public class InsertDocuments extends JFrame {
 			            {
 			            	if(potentialFile instanceof File)
 			            	{
-			            		txtDocumentName.setText(((File) potentialFile).getAbsolutePath());
+			            		File theFile = (File)potentialFile;
+			            		if(theFile.isDirectory() == true)
+			            		{
+			            			return; //idiot proofing
+			            		}
+			            		
+			            		ConfigData.setLastFolder((theFile).getParentFile().getAbsolutePath());
+			            		txtDocumentName.setText((theFile).getAbsolutePath());
+			            		setComboBoxValue();
 			            	}
 			                
 			            }
@@ -292,7 +302,8 @@ public class InsertDocuments extends JFrame {
 	
 	private void populateFields()
 	{
-		DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+		String theFormat = ConfigData.getInsertDateFormat();
+		DateFormat dateFormat = new SimpleDateFormat(theFormat);
 		Calendar cal = Calendar.getInstance();
 		String strDate = dateFormat.format(cal.getTime());
 		this.txtCreateDate.setText(strDate);
@@ -306,7 +317,7 @@ public class InsertDocuments extends JFrame {
 	{
 		File selectedFile = null;
 		JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+		fileChooser.setCurrentDirectory(new File(ConfigData.getLastFolder()));
 		int result = fileChooser.showOpenDialog(this);
 		if (result == JFileChooser.APPROVE_OPTION) {
 		    selectedFile = fileChooser.getSelectedFile();
@@ -317,7 +328,36 @@ public class InsertDocuments extends JFrame {
 		}
 		else
 		{
+			ConfigData.setLastFolder(selectedFile.getParentFile().getAbsolutePath());
 			return selectedFile.getAbsolutePath();
+		}
+	}
+	
+	private void setComboBoxValue()
+	{
+		if(txtDocumentName == null || txtDocumentName.getText().length() < 4)
+		{
+			return;  //there is no valid value in the text box;
+		}
+		String strExtention = txtDocumentName.getText().substring(txtDocumentName.getText().length() - 3, txtDocumentName.getText().length());
+		ComboBoxModel<DocumentType> comboBoxModel = comboBoxDocumentTypes.getModel();
+		int size = comboBoxModel.getSize();
+		for(int i = 0; i < size; i++)
+		{
+			if(strExtention.equalsIgnoreCase("jpg") || strExtention.equalsIgnoreCase("png") || strExtention.equalsIgnoreCase("gif"))
+			{
+				DocumentType documentType = comboBoxModel.getElementAt(i);
+				if(documentType.toString().indexOf("PERSONAL") >= 0 && documentType.toString().indexOf("PHOTO") >= 0)
+				{
+					comboBoxDocumentTypes.setSelectedIndex(i);
+					ExifData exifData = ExifUtils.getExifData(txtDocumentName.getText());
+					txtIMGLocation.setText(exifData.getStrAddress());
+					SimpleDateFormat dt1 = new SimpleDateFormat(ConfigData.getInsertDateFormat());
+					txtCreateDate.setText(dt1.format(exifData.getCreateDate()));
+					textAreaPDFText.setText(exifData.toString());
+				}
+			}
+
 		}
 	}
 	
@@ -350,7 +390,7 @@ public class InsertDocuments extends JFrame {
 		
 		DocumentType documentType;
 		documentType = (DocumentType)(this.comboBoxDocumentTypes.getSelectedItem());
-		Documents document = MongoDBUtils.saveDocument(	this.txtDocumentName.getText(), this.txtCreateDate.getText(), this.txtDueDate.getText(), 
+		Documents document = MongoDBUtils.saveDocument(	this.txtDocumentName.getText(), this.txtCreateDate.getText(),  this.txtDueDate.getText(), this.txtIMGLocation.getText(), 
 									txtAmount.getText(), txtPaidDate.getText(), txtCurrency.getText(), textAreaPDFText.getText(), 
 									documentType, mongoClient, strDBSchema);
 		
@@ -385,7 +425,20 @@ public class InsertDocuments extends JFrame {
 					txtDueDate.setText("");
 					txtPaidDate.setText("");
 					txtDueDate.setEnabled(false);
+					txtDueDate.setVisible(false);
 					txtPaidDate.setEnabled(false);
+					lblDueDate.setVisible(false);
+					lblIMGLocation.setVisible(true);
+					txtIMGLocation.setVisible(true);
+				}
+				else
+				{
+					txtDueDate.setEnabled(false);
+					txtDueDate.setVisible(true);
+					txtPaidDate.setEnabled(false);
+					lblIMGLocation.setVisible(false);
+					txtIMGLocation.setVisible(false);
+					lblDueDate.setVisible(true);
 				}
 				// do something with object
 			}

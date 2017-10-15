@@ -16,6 +16,8 @@ import java.util.Formatter;
 import java.util.HashSet;
 import java.util.Properties;
 
+import org.json.JSONObject;
+
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Directory;
@@ -26,6 +28,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
+import transientPojos.ExifData;
+import util.ExifUtils;
 import util.JSONBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,14 +37,25 @@ import java.nio.file.Paths;
 public class Test3 {
 
 	public static void main(String[] args) {
+	
+		ExifData exifData = ExifUtils.getExifData("c:\\development\\pic.jpg");
+		System.out.println(exifData);
 		
-		showMetaData();
+		
+		//ExifUtils.showMetaData(strPathToFile, exifData)
+/*		showMetaData();
 		String test = getUrlContents("http://nominatim.openstreetmap.org/reverse?format=json&lat=39.936230555555554&lon=-74.07645277777777&zoom=18&addressdetails=1");
 		Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 		JsonParser jp = new JsonParser();
 		JsonElement je = jp.parse(test);
-		String prettyJsonString = gson.toJson(je);		
-	    System.out.println(prettyJsonString);
+		String prettyJsonString = gson.toJson(je);
+		JSONObject jsonObj = new JSONObject(prettyJsonString);
+		String strStreetAddress = jsonObj.getString("display_name");
+	    System.out.println(prettyJsonString);*/
+	    
+	    
+	    
+	    
 		/*		String test = "[GPS] - GPS Latitude = 39° 56' 10.43";
 		if(test.toUpperCase().indexOf("GPS L") > 0 && test.indexOf(" = ") > 0)
 		{

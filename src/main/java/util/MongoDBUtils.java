@@ -409,7 +409,7 @@ public class MongoDBUtils {
 	 * @param documentType
 	 * @return
 	 */
-	public static Documents saveDocument(	String txtName, String strDocumentCreateDate, String strDueDate, 
+	public static Documents saveDocument(	String txtName, String strDocumentCreateDate, String strDueDate, String strLocation,
 										String strAmount, String strPaidDate, String strCurrency,
 										String strDescription, DocumentType documentType,  
 										MongoClient mongoClient, String database)

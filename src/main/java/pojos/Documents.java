@@ -53,6 +53,9 @@ public class Documents
 	@Property("document_description")
 	private String strDocumentDescription = null;
 	
+	@Property("address")
+	private String strAddress = null;
+	
 	@Property("text_content")
 	private String strTextContent = null;
 	
@@ -127,13 +130,11 @@ public class Documents
 		this.date_paid_date = date_paid_date;
 	}
 
-	public String getStrDocumentDescription() {
-		return strDocumentDescription;
-	}
-
-	public void setStrDocumentDescription(String strDocumentDescription) {
-		this.strDocumentDescription = strDocumentDescription;
-	}
+	public String getStrDocumentDescription() { return strDocumentDescription; }
+	public void setStrDocumentDescription(String strDocumentDescription) { this.strDocumentDescription = strDocumentDescription; }
+	
+	public String getStrAddress() { return strAddress; }	
+	public void setStrAddress(String strAddress) { this.strAddress = strAddress; }
 
 	public DocumentType getDocumentType() {
 		return documentType;
