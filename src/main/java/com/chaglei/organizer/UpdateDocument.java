@@ -45,7 +45,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.ActionEvent;
 
-public class InsertDocuments extends JFrame {
+public class UpdateDocument extends JFrame {
 	private static final long serialVersionUID = 1L;
 	protected String strDBSchema = null;
 	MongoClient mongoClient = null;
@@ -74,10 +74,10 @@ public class InsertDocuments extends JFrame {
 	JComboBox<DocumentType> comboBoxDocumentTypes = new JComboBox<DocumentType>();
 	JTextArea textAreaPDFText = new JTextArea();
 	
-	public InsertDocuments(MongoClient mongoClient, String schema) {
+	public UpdateDocument(MongoClient mongoClient, String schema) {
 		this.strDBSchema = schema;
 		this.mongoClient = mongoClient;
-		buildGUI("Insert Document");
+		buildGUI("Update Document");
 		populateDocTypes();
 		populateFields();
 		setSize((int)(1920/1.8), 1080/2);
@@ -408,7 +408,7 @@ public class InsertDocuments extends JFrame {
 	{
 		LoginCredentials loginCredentials = new LoginCredentials();
 		loginCredentials.doLogin();
-		new InsertDocuments(loginCredentials.getMongoClient(), loginCredentials.getDBSchema());
+		new UpdateDocument(loginCredentials.getMongoClient(), loginCredentials.getDBSchema());
 	}
 	
 	class ItemChangeListener implements ItemListener 
