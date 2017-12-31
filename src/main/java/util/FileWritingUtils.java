@@ -105,7 +105,7 @@ public class FileWritingUtils {
     	if (Desktop.isDesktopSupported()) {
     	    try {
     	        File myFile = new File(strFileName);
-    	        if(strFileName.endsWith("pdf") == true || strFileName.endsWith("mp4") == true)
+    	        if(strFileName.endsWith("pdf") == true || strFileName.endsWith("mp4") == true || strFileName.endsWith("zip") == true)
     	        {
     	        	Desktop.getDesktop().open(myFile);	
     	        }

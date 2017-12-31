@@ -409,10 +409,17 @@ public class MongoDBUtils {
 	 * @param documentType
 	 * @return
 	 */
-	public static Documents saveDocument(	String txtName, String strDocumentCreateDate, String strDueDate, String strLocation,
-										String strAmount, String strPaidDate, String strCurrency,
-										String strDescription, DocumentType documentType,  
-										MongoClient mongoClient, String database)
+	public static Documents saveDocument(	String txtName, 
+											String strDocumentCreateDate, 
+											String strDueDate, 
+											String strLocation,
+											String strAmount, 
+											String strPaidDate, 
+											String strCurrency,
+											String strDescription, 
+											DocumentType documentType,  
+											MongoClient mongoClient, 
+											String database)
 	{
 		Morphia localMorphia = getMorphia();
 		final Datastore datastore = localMorphia.createDatastore(mongoClient, database);
@@ -429,7 +436,8 @@ public class MongoDBUtils {
 		document.setStrName(txtName);
 		document.setDate_document_creation(DateUtil.getDateObject(strDocumentCreateDate));
 		document.setDate_due_date(DateUtil.getDateObject(strDueDate));
-		document.setBigDecimalAmount(new BigDecimal(strAmount));
+		document.setStrAddress(strLocation);
+		try {document.setBigDecimalAmount(new BigDecimal(strAmount)); } catch ( Exception anyExc ) {document.setBigDecimalAmount( new BigDecimal(0)); }
 		document.setDate_paid_date(DateUtil.getDateObject(strPaidDate));
 		document.setCurrency(Currency.getInstance(strCurrency));
 		document.setStrDocumentDescription(strDescription);
@@ -444,6 +452,22 @@ public class MongoDBUtils {
 			scannedFile1.setDocumentsID(document.getID());
 			datastore.save(scannedFile1);
 		}
+		return document;
+	}
+	
+	/**
+	 * saves a document object, used during update operation
+	 * 
+	 * @return document
+	 */
+	public static Documents saveDocument( Documents document, MongoClient mongoClient, String database)
+	{
+		Morphia localMorphia = getMorphia();
+		final Datastore datastore = localMorphia.createDatastore(mongoClient, database);
+		datastore.ensureIndexes();
+		
+		datastore.save(document);
+		
 		return document;
 	}
 	
@@ -693,7 +717,7 @@ public class MongoDBUtils {
 		datastore.ensureIndexes();
 		
 		File file = new File(txtFileName); //File pdfFile = new File("C:\\development\\receipt scans\\img012.pdf");
-		InputStream is;
+		InputStream is = null;
 		byte[] byteArrayPdfFile = null;
 		try {
 			is = FileUtils.openInputStream(file);
@@ -701,6 +725,15 @@ public class MongoDBUtils {
 		} catch (IOException e) 
 		{
 			return null;
+		}
+		finally
+		{
+			try {
+				if (is != null) { is.close(); }
+			} catch (Exception anyExc) {
+				anyExc.printStackTrace();
+			}
+
 		}
 
 		String strHashCode = SHA256.getSHA256Hash(byteArrayPdfFile);
@@ -764,11 +797,20 @@ public class MongoDBUtils {
 			String strFileExtension = txtFileName.substring(txtFileName.length() - 3);
 			final ScannedFiles scannedFile = new ScannedFiles(byteArrayPdfFile, 0, strHashCode, strFileExtension);
 			datastore.save(scannedFile);
+			is.close();
 			return scannedFile;
 		}
 		catch(Exception anyExc)
 		{
 			return null;
+		}
+		finally
+		{
+			try {
+				is.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	

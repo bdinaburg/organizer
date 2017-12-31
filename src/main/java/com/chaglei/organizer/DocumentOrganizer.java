@@ -262,7 +262,7 @@ public class DocumentOrganizer extends JFrame {
 		    }
 
 			public void mousePressed(MouseEvent me) {
-				OrganizerPopupMenu.removeFromView();
+				//OrganizerPopupMenu.removeFromView();
 		        JTable table =(JTable) me.getSource();
 		        Point p = me.getPoint();
 		        int row = table.rowAtPoint(p);

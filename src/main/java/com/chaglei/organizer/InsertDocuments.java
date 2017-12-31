@@ -69,7 +69,7 @@ public class InsertDocuments extends JFrame {
 	JTextFieldEnhanced txtAmount = new JTextFieldEnhanced();
 	JTextFieldEnhanced txtPaidDate = new JTextFieldEnhanced();
 	JTextFieldEnhanced txtCurrency = new JTextFieldEnhanced();
-	JTextFieldEnhanced txtDescription = new JTextFieldEnhanced();
+	JTextFieldEnhanced txtDescription = new JTextFieldEnhanced(); //appears to be unused
 	JTextFieldEnhanced txtIMGLocation = new JTextFieldEnhanced();
 	JComboBox<DocumentType> comboBoxDocumentTypes = new JComboBox<DocumentType>();
 	JTextArea textAreaPDFText = new JTextArea();

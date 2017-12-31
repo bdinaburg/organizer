@@ -89,6 +89,10 @@ public class MongoDBMorphia {
 		    
 		    Documents doc2 = gson.fromJson(jsonStr, Documents.class);
 		    
+		    doc.setStrName("2009 dodge charger repair bill 1823.49 now edited");
+		    
+		    datastore.save(doc);
+		    
 		    jsonStr = gson.toJson(doc2);
 		    System.out.println(jsonStr);
 		    

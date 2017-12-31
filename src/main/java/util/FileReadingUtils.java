@@ -28,11 +28,20 @@ public class FileReadingUtils {
 	public static boolean doesFileExist(String strPathToFile) {
 		File f = new File(strPathToFile);
 
-		if (f.exists()) {
-			return true;
-		} else {
+		try
+		{
+			if (f.exists()) { return true; } 
+			else { return false; }
+		}
+		catch(Exception anyExc)
+		{
 			return false;
 		}
+		finally
+		{
+			f = null;
+		}
+		
 	}
 	
 	public static String getCurrentPath()

@@ -1,7 +1,5 @@
 package com.chaglei.organizer;
 
-import java.awt.Dimension;
-import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -17,12 +15,11 @@ import com.mongodb.MongoClient;
 import pojos.Documents;
 import util.MongoDBUtils;
 
-class OrganizerPopupMenu extends JPopupMenu {
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	JMenuItem deleteMenuItem;
+class OrganizerPopupMenu {
+	JPopupMenu jPopupMenu = new JPopupMenu(); 
+	JMenuItem menuItemDelete;
+	JMenuItem menuItemUpdate;
+	JTable jTable;
 	static OrganizerPopupMenu selfReference = null;
 	
 	public static OrganizerPopupMenu getIntance(Point point, JTable jTable, MongoClient mongoClient, String strDBname){
@@ -30,26 +27,15 @@ class OrganizerPopupMenu extends JPopupMenu {
 		{
 			selfReference = new OrganizerPopupMenu(point, jTable, mongoClient, strDBname);
 		}
-    	point = MouseInfo.getPointerInfo().getLocation();
-		selfReference.setLocation(point);
-		selfReference.setVisible(true);
-		selfReference.setMinimumSize(new Dimension(100, 10));
-		selfReference.setMaximumSize(new Dimension(100, 10));
+		selfReference.jPopupMenu.show(jTable, point.x, point.y);
 		return selfReference;
-    	
+
 	}
-	
-    public static void removeFromView()
-    {
-    	if(selfReference != null)
-    	{
-    		selfReference.setVisible(false);
-    	}
-    }
-	
-    private OrganizerPopupMenu(Point point, JTable jTable, MongoClient mongoClient, String strDBname){
-    	deleteMenuItem = new JMenuItem("Delete");
-    	deleteMenuItem.addActionListener(new ActionListener() {
+
+	private OrganizerPopupMenu(Point point, JTable jTable, MongoClient mongoClient, String strDBname){
+		this.jTable = jTable;
+    	menuItemDelete = new JMenuItem("Delete");
+    	menuItemDelete.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 	        	int row = jTable.getSelectedRow();
 	        	row = jTable.convertRowIndexToModel(row);
@@ -63,13 +49,24 @@ class OrganizerPopupMenu extends JPopupMenu {
 	                	MongoDBUtils.deleteDocument(mongoClient, strDBname, document);
 	                }
 	        	}
-	        	selfReference.setVisible(false);
 			}
 		});
-        add(deleteMenuItem);
-    	this.setLocation(point);
-    	this.setVisible(true);
-    	this.setMinimumSize(new Dimension(100, 10));
-    	this.setMaximumSize(new Dimension(100, 10));
+    	
+    	menuItemUpdate = new JMenuItem("Update");
+    	menuItemUpdate.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+	        	int row = jTable.getSelectedRow();
+	        	row = jTable.convertRowIndexToModel(row);
+	        	Documents document = ((TableModel)jTable.getModel()).getDocumentAtRow(row);
+	        	if(document != null)
+	        	{
+                	new UpdateDocument(mongoClient, strDBname, document);
+	        	}
+			}
+		});
+
+    	jPopupMenu.add(menuItemDelete);
+    	jPopupMenu.add(menuItemUpdate);
+    	jPopupMenu.show(this.jTable, point.x, point.y);
     }
 }

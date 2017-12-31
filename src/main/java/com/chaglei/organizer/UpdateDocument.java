@@ -2,25 +2,23 @@ package com.chaglei.organizer;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetDropEvent;
-import java.io.File;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.math.BigDecimal;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.util.Currency;
 import java.util.List;
 
-import javax.swing.ComboBoxModel;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -30,20 +28,12 @@ import com.mongodb.MongoClient;
 
 import pojos.DocumentType;
 import pojos.Documents;
-import pojos.ScannedFiles;
 import swingUtil.JTextFieldEnhanced;
-import transientPojos.DocTypes;
 import transientPojos.DocTypes.DocType;
-import transientPojos.ExifData;
 import util.ConfigData;
-import util.ExifUtils;
-import util.FileReadingUtils;
+import util.DateUtil;
 import util.FrameUtil;
 import util.MongoDBUtils;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.ActionEvent;
 
 public class UpdateDocument extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -69,17 +59,17 @@ public class UpdateDocument extends JFrame {
 	JTextFieldEnhanced txtAmount = new JTextFieldEnhanced();
 	JTextFieldEnhanced txtPaidDate = new JTextFieldEnhanced();
 	JTextFieldEnhanced txtCurrency = new JTextFieldEnhanced();
-	JTextFieldEnhanced txtDescription = new JTextFieldEnhanced();
+	JTextFieldEnhanced txtDescription = new JTextFieldEnhanced(); //unused
 	JTextFieldEnhanced txtIMGLocation = new JTextFieldEnhanced();
 	JComboBox<DocumentType> comboBoxDocumentTypes = new JComboBox<DocumentType>();
 	JTextArea textAreaPDFText = new JTextArea();
 	
-	public UpdateDocument(MongoClient mongoClient, String schema) {
+	public UpdateDocument(MongoClient mongoClient, String schema, Documents document) {
 		this.strDBSchema = schema;
 		this.mongoClient = mongoClient;
-		buildGUI("Update Document");
-		populateDocTypes();
-		populateFields();
+		buildGUI("Update Document", document);
+		populateDocTypes(document);
+		populateFields(document);
 		setSize((int)(1920/1.8), 1080/2);
 		setPreferredSize(new Dimension((int)(1920/1.8), 1080/2));
 		FrameUtil.centerWindow(this);
@@ -87,8 +77,7 @@ public class UpdateDocument extends JFrame {
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 	}
 	
-	@SuppressWarnings("serial")
-	private void buildGUI(String strTitle)
+	private void buildGUI(String strTitle, Documents document)
 	{
 		setTitle(strTitle);
 		getContentPane().setLayout(new BorderLayout(0, 0));
@@ -126,20 +115,14 @@ public class UpdateDocument extends JFrame {
 		txtCurrency.setEditable(false);
 		txtCurrency.setColumns(10);
 	
-		btnFindDoc.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				String strFile = chosenFile();
-				txtDocumentName.setText(strFile);
-				setComboBoxValue();
-			}
-		});
-		
+		btnFindDoc.setEnabled(false);
+
 
 		
 
 		btnSaveDoc.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				insertDocument();
+				updateDocument(document);
 			}
 		});
 		
@@ -147,7 +130,7 @@ public class UpdateDocument extends JFrame {
 		 * ItemChangeListener is an internal class. Listens for changes and adjusts the GUI 
 		 * accordingly as not all input fields make sense for every type of document
 		 */
-		comboBoxDocumentTypes.addItemListener(new ItemChangeListener());
+		comboBoxDocumentTypes.addItemListener(new ItemChangeListener(document));
 		
 		
 		GroupLayout gl_panelMainPanel = new GroupLayout(panelMainPanel);
@@ -257,168 +240,103 @@ public class UpdateDocument extends JFrame {
 		scrollPane.setViewportView(textAreaPDFText);
 		panelMainPanel.setLayout(gl_panelMainPanel);
 		
-		txtDocumentName.setDropTarget(new DropTarget() {
-		    public synchronized void drop(DropTargetDropEvent evt) {
-		        try {
-		            evt.acceptDrop(DnDConstants.ACTION_COPY);
-		            Object obj = evt.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-		            if(obj instanceof List<?>)
-		            {
-			            List<?> droppedFiles = (List<?>) evt.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-			            for (Object potentialFile : droppedFiles) 
-			            {
-			            	if(potentialFile instanceof File)
-			            	{
-			            		File theFile = (File)potentialFile;
-			            		if(theFile.isDirectory() == true)
-			            		{
-			            			return; //idiot proofing
-			            		}
-			            		
-			            		ConfigData.setLastFolder((theFile).getParentFile().getAbsolutePath());
-			            		txtDocumentName.setText((theFile).getAbsolutePath());
-			            		setComboBoxValue();
-			            	}
-			                
-			            }
-		            }
-
-		        } catch (Exception ex) {
-		            ex.printStackTrace();
-		        }
-		    }
-		});
 	}
 	
-	private void populateDocTypes()
+	private void populateDocTypes(Documents document)
 	{
 		List<DocumentType> listDocTypes = MongoDBUtils.getDocTypes(mongoClient, strDBSchema);
 		for(DocumentType docTypes : listDocTypes)
 		{
 			this.comboBoxDocumentTypes.addItem(docTypes);
 		}
-
 	}
 	
-	private void populateFields()
+	private void populateFields(Documents document)
 	{
 		String theFormat = ConfigData.getInsertDateFormat();
 		DateFormat dateFormat = new SimpleDateFormat(theFormat);
-		Calendar cal = Calendar.getInstance();
-		String strDate = dateFormat.format(cal.getTime());
-		this.txtCreateDate.setText(strDate);
-		this.txtDueDate.setText(strDate);
-		this.txtPaidDate.setText(strDate);
+		
+		this.txtDocumentName.setText(document.getStrName());
+		try{ this.txtCreateDate.setText(dateFormat.format(document.getDate_document_creation()));  } catch (Exception anyExc) { this.txtCreateDate.setText("");}		
+		try{ this.txtDueDate.setText(dateFormat.format(document.getDate_due_date())); } catch (Exception anyExc) { this.txtDueDate.setText("");}
+		try{ this.txtIMGLocation.setText(document.getStrAddress()); } catch (Exception anyExc) { this.txtIMGLocation.setText("");}
+		
+		DecimalFormat df = new DecimalFormat("0.00");
+		try{ this.txtAmount.setText(df.format(Double.parseDouble(document.getBigDecimalAmount().toString()))); } catch (Exception anyExc) { this.txtAmount.setText("");}
+		if(Double.parseDouble(document.getBigDecimalAmount().toString()) == 0) { this.txtAmount.setText(""); }
+		try{ this.txtPaidDate.setText(dateFormat.format(document.getDate_paid_date())); } catch (Exception anyExc) { this.txtPaidDate.setText("");} 
+		//try{ this.txtCurrency.setText(document.getCurrency().toString()); } catch (Exception anyExc) { this.txtCurrency.setText("USD");}
+		this.textAreaPDFText.setText(document.getStrDocumentDescription());
 		this.txtDueDate.setEnabled(true);
 		this.txtPaidDate.setEnabled(true);
-	}
-	
-	private String chosenFile()
-	{
-		File selectedFile = null;
-		JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setCurrentDirectory(new File(ConfigData.getLastFolder()));
-		int result = fileChooser.showOpenDialog(this);
-		if (result == JFileChooser.APPROVE_OPTION) {
-		    selectedFile = fileChooser.getSelectedFile();
-		}
-		if(selectedFile == null)
+		
+		for(int i = 0; i < comboBoxDocumentTypes.getItemCount(); i++)
 		{
-			return "";
-		}
-		else
-		{
-			ConfigData.setLastFolder(selectedFile.getParentFile().getAbsolutePath());
-			return selectedFile.getAbsolutePath();
-		}
-	}
-	
-	private void setComboBoxValue()
-	{
-		if(txtDocumentName == null || txtDocumentName.getText().length() < 4)
-		{
-			return;  //there is no valid value in the text box;
-		}
-		String strExtention = txtDocumentName.getText().substring(txtDocumentName.getText().length() - 3, txtDocumentName.getText().length());
-		ComboBoxModel<DocumentType> comboBoxModel = comboBoxDocumentTypes.getModel();
-		int size = comboBoxModel.getSize();
-		for(int i = 0; i < size; i++)
-		{
-			if(strExtention.equalsIgnoreCase("jpg") || strExtention.equalsIgnoreCase("png") || strExtention.equalsIgnoreCase("gif"))
+			DocumentType dt1 = comboBoxDocumentTypes.getItemAt(i);
+			if(dt1.toString().equalsIgnoreCase(document.getDocumentType().toString()))
 			{
-				DocumentType documentType = comboBoxModel.getElementAt(i);
-				if(documentType.toString().indexOf("PERSONAL") >= 0 && documentType.toString().indexOf("PHOTO") >= 0)
-				{
-					comboBoxDocumentTypes.setSelectedIndex(i);
-					ExifData exifData = ExifUtils.getExifData(txtDocumentName.getText());
-					txtIMGLocation.setText(exifData.getStrAddress());
-					SimpleDateFormat dt1 = new SimpleDateFormat(ConfigData.getInsertDateFormat());
-					txtCreateDate.setText(dt1.format(exifData.getCreateDate()));
-					textAreaPDFText.setText(exifData.toString());
-				}
+				this.comboBoxDocumentTypes.setSelectedIndex(i);
 			}
-
 		}
+		
+		/*		String txtName, 
+		String strDocumentCreateDate, 
+		String strDueDate, 
+		String strLocation,
+		String strAmount, 
+		String strPaidDate, 
+		String strCurrency,
+		String strDescription,*/ 
 	}
 	
-	private boolean insertDocument()
+	private boolean updateDocument(Documents document)
 	{
-		String strFile = this.txtDocumentName.getText();
-		if(FileReadingUtils.doesFileExist(strFile) == false)
-		{
-			JOptionPane.showMessageDialog(this, "The file you specified " + strFile + " doesn't exist");
-		}
-		
-		List<ScannedFiles> listScannedFiles = MongoDBUtils.doesScannedFileExist(mongoClient, strDBSchema, this.txtDocumentName.getText());
-		
-		
-		
-		if(listScannedFiles != null)
-		{
-			int dialogButton = JOptionPane.YES_NO_OPTION;
-			dialogButton = JOptionPane.showConfirmDialog (null, "Document already exists, delete?","WARNING", dialogButton);
-            if(dialogButton == JOptionPane.YES_OPTION) 
-            {
-            	MongoDBUtils.deleteScannedFiles(mongoClient, strDBSchema, listScannedFiles);
-            	//listScannedFiles.
-            }
-            if(dialogButton == JOptionPane.NO_OPTION) 
-            {
-                  return false;
-            }
-		}
-		
+		document.setStrName(this.txtDocumentName.getText());
+		document.setDate_document_creation(DateUtil.getDateObject(txtCreateDate.getText()));
+		document.setDate_due_date(DateUtil.getDateObject(txtDueDate.getText()));
+		document.setStrAddress(txtIMGLocation.getText());
+		try {document.setBigDecimalAmount(new BigDecimal(txtAmount.getText())); } catch ( Exception anyExc ) {document.setBigDecimalAmount( new BigDecimal(0)); }
+		document.setDate_paid_date(DateUtil.getDateObject(txtPaidDate.getText()));
+		document.setStrDocumentDescription(textAreaPDFText.getText());
 		DocumentType documentType;
 		documentType = (DocumentType)(this.comboBoxDocumentTypes.getSelectedItem());
-		Documents document = MongoDBUtils.saveDocument(	this.txtDocumentName.getText(), this.txtCreateDate.getText(),  this.txtDueDate.getText(), this.txtIMGLocation.getText(), 
-									txtAmount.getText(), txtPaidDate.getText(), txtCurrency.getText(), textAreaPDFText.getText(), 
-									documentType, mongoClient, strDBSchema);
+		document.setDocumentType(documentType);
 		
-		if(document == null)
-		{
-			return false;
-		}
-		else
-		{
-			return true;
-		}
+		Documents doc = MongoDBUtils.saveDocument( document, mongoClient, strDBSchema);
+		
+		if (doc == null) { return false; }  else { return true; }
 	}
 
 	public static void main(String... args)
 	{
 		LoginCredentials loginCredentials = new LoginCredentials();
 		loginCredentials.doLogin();
-		new UpdateDocument(loginCredentials.getMongoClient(), loginCredentials.getDBSchema());
+		Documents document = new Documents();
+		document.setStrName("2009 dodge charger repair bill 1823.49");
+		document.setDate_document_creation(DateUtil.getDateObject("09/25/2015"));
+		document.setDate_due_date(null);
+		document.setBigDecimalAmount(new BigDecimal("1823.49"));
+		document.setDate_paid_date(DateUtil.getDateObject("09/30/2015"));
+		document.setCurrency(Currency.getInstance("USD"));
+		document.setStrDocumentDescription("random stuff");
+		document.setDocumentType(new DocumentType(DocType.BILL_CAR));
+		new UpdateDocument(loginCredentials.getMongoClient(), loginCredentials.getDBSchema(), document);
 	}
 	
 	class ItemChangeListener implements ItemListener 
 	{
+		Documents document;
+		ItemChangeListener(Documents document)
+		{
+			this.document = document;
+		}
 		@Override
 		public void itemStateChanged(ItemEvent event) 
 		{
 			if (event.getStateChange() == ItemEvent.SELECTED) {
 				DocumentType documentType = (DocumentType) event.getItem();
-				populateFields();
+				txtDueDate.setEnabled(true);
+				txtPaidDate.setEnabled(true);
 				String strDocSelected = documentType.toString();
 				final String PERSONAL_PHOTO = DocumentType.docTypeToString(DocType.PHOTO_PERSONAL);
 				if (strDocSelected.equalsIgnoreCase(PERSONAL_PHOTO) == true) {
